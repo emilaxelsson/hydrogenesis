@@ -1,5 +1,7 @@
 *Note: Hydrogenesis is not yet done, but this document describes the goal.*
 
+![](./logo.png)
+
 # Hydrogenesis
 
 [Hydrogen](http://hydrogen-music.org/) is great for realistic drum track generation.
