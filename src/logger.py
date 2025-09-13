@@ -32,7 +32,7 @@ class Logger:
         return Logger(self.indent + additional_indent)
 
 class SilentLogger(Logger):
-    def log(self, message: str = ""):
+    def log(self, message: str = "", tag: str = ""):
         pass
 
     def new(self, additional_indent: int):
