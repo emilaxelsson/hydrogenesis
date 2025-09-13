@@ -570,8 +570,7 @@ class Parser:
 
     def parse_mptm_data(self):
         # Pointer to the MPTM structure is found in the last four bytes of the file
-        self.f.seek(0, os.SEEK_END)
-        self.f.seek(-4, os.SEEK_CUR)
+        self.f.seek(-4, os.SEEK_END)
         mptm_pos = self.read_u32("mptm_pos")
         self.f.seek(mptm_pos)
 
