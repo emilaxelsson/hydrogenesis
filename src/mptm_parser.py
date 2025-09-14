@@ -138,6 +138,10 @@ def read_cstr(b: bytes) -> str:
 
 T = TypeVar("T")
 
+ITHeader = dict[str, Any]
+Row = dict[int, Any]
+Pattern = list[Row]
+
 
 class Parser:
     def __init__(self, f: BufferedReader, logger: Logger):
@@ -219,10 +223,10 @@ class Parser:
         self.log_read("bytes", str(b), pos, var)
         return b
 
-    def parse_it_header(self) -> dict[str, Any]:
+    def parse_it_header(self) -> ITHeader:
         return self.sub("parse_it_header()", lambda sub: sub._parse_it_header())
 
-    def _parse_it_header(self) -> dict[str, Any]:
+    def _parse_it_header(self) -> ITHeader:
         signature = self.read_bytes(4, "signature")
 
         if signature != b"IMPM":
@@ -276,7 +280,7 @@ class Parser:
             "pattern_offsets": pattern_offsets,
         }
 
-    def parse_packed_pattern_rows(self, num_rows: int) -> list[dict[int, Any]]:
+    def parse_packed_pattern_rows(self, num_rows: int) -> list[Row]:
         return self.sub(
             f"parse_packed_pattern_rows({num_rows})",
             lambda sub: sub._parse_packed_pattern_rows(num_rows),
@@ -284,8 +288,8 @@ class Parser:
 
     # Follows the pseudo-code here:
     # https://github.com/schismtracker/schismtracker/wiki/ITTECH.TXT#impulse-pattern-format
-    def _parse_packed_pattern_rows(self, num_rows: int) -> list[dict[int, Any]]:
-        rows: list[dict[int, Any]] = []
+    def _parse_packed_pattern_rows(self, num_rows: int) -> list[Row]:
+        rows: list[Row] = []
         channel_masks: dict[int, Any] = {}
         channel_notes: dict[int, int] = {}
         channel_instrs: dict[int, int] = {}
@@ -299,7 +303,7 @@ class Parser:
             )
 
         def _parse_packed_pattern_row(self: Parser):
-            row: dict[int, Any] = {}
+            row: Row = {}
 
             def get_next_channel_marker() -> None:
                 channel_variable = self.read_u8("channel_variable")
@@ -361,8 +365,8 @@ class Parser:
         return rows
 
     # https://github.com/schismtracker/schismtracker/wiki/ITTECH.TXT#impulse-pattern-format
-    def parse_patterns(self, offsets: list[int]) -> list[list[dict[int, Any]]]:
-        patterns: list[list[dict[int, Any]]] = []
+    def parse_patterns(self, offsets: list[int]) -> list[Pattern]:
+        patterns: list[Pattern] = []
 
         for pos in offsets:
             self.f.seek(pos)
