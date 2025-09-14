@@ -13,12 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from io import BufferedReader, BytesIO
+from io import BufferedReader
 import os
 import struct
-from typing import Any, Callable, Dict, TypeVar
+from typing import Any, Callable, cast, Optional, TypeVar
 
-from logger import Logger, SilentLogger
+from logger import Logger
 
 
 def read_u8(b: bytes) -> int:
@@ -28,7 +28,7 @@ def read_u8(b: bytes) -> int:
     >>> hex(read_u8(b'\x2a\x22'))
     '0x2a'
     """
-    return struct.unpack_from("<B", b)[0]
+    return cast(int, struct.unpack_from("<B", b)[0])
 
 
 def read_u16(b: bytes) -> int:
@@ -38,7 +38,7 @@ def read_u16(b: bytes) -> int:
     >>> hex(read_u16(b'\x23\x45\x22'))
     '0x4523'
     """
-    return struct.unpack_from("<H", b)[0]
+    return cast(int, struct.unpack_from("<H", b)[0])
 
 
 def read_u32(b: bytes) -> int:
@@ -48,7 +48,7 @@ def read_u32(b: bytes) -> int:
     >>> hex(read_u32(b'\x23\x34\x45\x56\x22'))
     '0x56453423'
     """
-    return struct.unpack_from("<I", b)[0]
+    return cast(int, struct.unpack_from("<I", b)[0])
 
 
 def read_u64(b: bytes) -> int:
@@ -58,15 +58,15 @@ def read_u64(b: bytes) -> int:
     >>> hex(read_u64(b'\x23\x34\x45\x56\x23\x34\x45\x56\x22'))
     '0x5645342356453423'
     """
-    return struct.unpack_from("<Q", b)[0]
+    return cast(int, struct.unpack_from("<Q", b)[0])
 
 
 # https://wiki.openmpt.org/Development:_228_Extensions#Adaptive_Integers
 def read_auint16(f: BufferedReader) -> int:
     """
-    >>> bin(read_auint16(BufferedReader(BytesIO(bytes([0b10011000, 0b00111000])))))
+    >>> from io import BytesIO; bin(read_auint16(BufferedReader(BytesIO(bytes([0b10011000, 0b00111000])))))
     '0b1001100'
-    >>> bin(read_auint16(BufferedReader(BytesIO(bytes([0b10011001, 0b00111000])))))
+    >>> from io import BytesIO; bin(read_auint16(BufferedReader(BytesIO(bytes([0b10011001, 0b00111000])))))
     '0b1110001001100'
     """
     x = read_u8(f.peek(1)) & 0b00000001
@@ -78,13 +78,13 @@ def read_auint16(f: BufferedReader) -> int:
 
 def read_auint32(f: BufferedReader) -> int:
     """
-    >>> bin(read_auint32(BufferedReader(BytesIO(bytes([0b10011000, 0b00111000, 0b01010101, 0xFF])))))
+    >>> from io import BytesIO; bin(read_auint32(BufferedReader(BytesIO(bytes([0b10011000, 0b00111000, 0b01010101, 0xFF])))))
     '0b100110'
-    >>> bin(read_auint32(BufferedReader(BytesIO(bytes([0b10011001, 0b00111000, 0b01010101, 0xFF])))))
+    >>> from io import BytesIO; bin(read_auint32(BufferedReader(BytesIO(bytes([0b10011001, 0b00111000, 0b01010101, 0xFF])))))
     '0b111000100110'
-    >>> bin(read_auint32(BufferedReader(BytesIO(bytes([0b10011010, 0b00111000, 0b01010101, 0xFF])))))
+    >>> from io import BytesIO; bin(read_auint32(BufferedReader(BytesIO(bytes([0b10011010, 0b00111000, 0b01010101, 0xFF])))))
     '0b101010100111000100110'
-    >>> bin(read_auint32(BufferedReader(BytesIO(bytes([0b10011011, 0b00111000, 0b01010101, 0xFF])))))
+    >>> from io import BytesIO; bin(read_auint32(BufferedReader(BytesIO(bytes([0b10011011, 0b00111000, 0b01010101, 0xFF])))))
     '0b111111110101010100111000100110'
     """
     size = read_u8(f.peek(1)) & 0b00000011
@@ -97,17 +97,19 @@ def read_auint32(f: BufferedReader) -> int:
         return read_u32(x) >> 2
     elif size == 3:
         return read_u32(f.read(4)) >> 2
+    else:
+        return 0  # cannot happen
 
 
 def read_auint64(f: BufferedReader) -> int:
     """
-    >>> bin(read_auint64(BufferedReader(BytesIO(bytes([0b10011000, 0b00111000, 0b01010101, 0xFF])))))
+    >>> from io import BytesIO; bin(read_auint64(BufferedReader(BytesIO(bytes([0b10011000, 0b00111000, 0b01010101, 0xFF])))))
     '0b100110'
-    >>> bin(read_auint64(BufferedReader(BytesIO(bytes([0b10011001, 0b00111000, 0b01010101, 0xFF])))))
+    >>> from io import BytesIO; bin(read_auint64(BufferedReader(BytesIO(bytes([0b10011001, 0b00111000, 0b01010101, 0xFF])))))
     '0b111000100110'
-    >>> bin(read_auint64(BufferedReader(BytesIO(bytes([0b10011010, 0b00111000, 0b01010101, 0xFF])))))
+    >>> from io import BytesIO; bin(read_auint64(BufferedReader(BytesIO(bytes([0b10011010, 0b00111000, 0b01010101, 0xFF])))))
     '0b111111110101010100111000100110'
-    >>> bin(read_auint64(BufferedReader(BytesIO(bytes([0b10011011, 0b00111000, 0b01010101, 0xFF, 0b11001100, 0b11100011, 0b11101110, 0b10000100])))))
+    >>> from io import BytesIO; bin(read_auint64(BufferedReader(BytesIO(bytes([0b10011011, 0b00111000, 0b01010101, 0xFF, 0b11001100, 0b11100011, 0b11101110, 0b10000100])))))
     '0b10000100111011101110001111001100111111110101010100111000100110'
     """
     size = read_u8(f.peek(1)) & 0b00000011
@@ -119,9 +121,11 @@ def read_auint64(f: BufferedReader) -> int:
         return read_u32(f.read(4)) >> 2
     elif size == 3:
         return read_u64(f.read(8)) >> 2
+    else:
+        return 0  # cannot happen
 
 
-def read_cstr(b):
+def read_cstr(b: bytes) -> str:
     """
     >>> read_cstr(b'hello  ')
     'hello'
@@ -140,7 +144,7 @@ class Parser:
         self.f = f
         self.logger = logger
 
-    def log(self, message: str = "", pos: int = None):
+    def log(self, message: str = "", pos: Optional[int] = None):
         tag = hex(pos) if pos is not None else "--"
         self.logger.log(message, tag)
 
@@ -153,72 +157,72 @@ class Parser:
         self.log(f"<--- {description}")
         return result
 
-    def log_read(self, type: str, val, pos: int, var: str):
+    def log_read(self, type: str, val: str, pos: Optional[int], var: Optional[str]):
         var_prefix = f"{var} = " if var else ""
         self.log(f"{var_prefix}reading {type} {val}", pos)
 
-    def log_read_int(self, type: str, val: int, pos: int, var: str):
+    def log_read_int(self, type: str, val: int, pos: int, var: Optional[str]):
         var_prefix = f"{var} = " if var else ""
         self.log(f"{var_prefix}reading {type} {hex(val)} (= {val})", pos)
 
-    def read_u8(self, var: str = None):
+    def read_u8(self, var: Optional[str] = None) -> int:
         pos = self.f.tell()
         i = read_u8(self.f.read(1))
         self.log_read_int("uint8", i, pos, var)
         return i
 
-    def read_u16(self, var: str = None):
+    def read_u16(self, var: Optional[str] = None) -> int:
         pos = self.f.tell()
         i = read_u16(self.f.read(2))
         self.log_read_int("uint16", i, pos, var)
         return i
 
-    def read_u32(self, var: str = None):
+    def read_u32(self, var: Optional[str] = None) -> int:
         pos = self.f.tell()
         i = read_u32(self.f.read(4))
         self.log_read_int("uint32", i, pos, var)
         return i
 
-    def read_u64(self, var: str = None):
+    def read_u64(self, var: Optional[str] = None) -> int:
         pos = self.f.tell()
         i = read_u64(self.f.read(8))
         self.log_read_int("uint64", i, pos, var)
         return i
 
-    def read_auint16(self, var: str = None):
+    def read_auint16(self, var: Optional[str] = None) -> int:
         pos = self.f.tell()
         i = read_auint16(self.f)
         self.log_read_int("auint16", i, pos, var)
         return i
 
-    def read_auint32(self, var: str = None):
+    def read_auint32(self, var: Optional[str] = None) -> int:
         pos = self.f.tell()
         i = read_auint32(self.f)
         self.log_read_int("auint32", i, pos, var)
         return i
 
-    def read_auint64(self, var: str = None):
+    def read_auint64(self, var: Optional[str] = None) -> int:
         pos = self.f.tell()
         i = read_auint64(self.f)
         self.log_read_int("auint64", i, pos, var)
         return i
 
-    def read_cstr(self, length: int, var: str = None):
+    def read_cstr(self, length: int, var: Optional[str] = None) -> str:
         pos = self.f.tell()
         str = read_cstr(self.f.read(length))
         self.log_read("string", f"'{str}'", pos, var)
         return str
 
-    def read_bytes(self, length: int, var: str = None):
+    def read_bytes(self, length: int, var: Optional[str] = None) -> bytes:
         pos = self.f.tell()
         b = self.f.read(length)
-        self.log_read("bytes", f"{b}", pos, var)
+        self.log_read("bytes", str(b), pos, var)
         return b
 
-    def parse_it_header(self) -> Dict[str, Any]:
+    def parse_it_header(self) -> dict[str, Any]:
         return self.sub("parse_it_header()", lambda sub: sub._parse_it_header())
 
-    def _parse_it_header(self) -> Dict[str, Any]:
+    def _parse_it_header(self) -> dict[str, Any]:
         signature = self.read_bytes(4, "signature")
 
         if signature != b"IMPM":
@@ -272,7 +276,7 @@ class Parser:
             "pattern_offsets": pattern_offsets,
         }
 
-    def parse_packed_pattern_rows(self, num_rows: int) -> list:
+    def parse_packed_pattern_rows(self, num_rows: int) -> list[dict[int, Any]]:
         return self.sub(
             f"parse_packed_pattern_rows({num_rows})",
             lambda sub: sub._parse_packed_pattern_rows(num_rows),
@@ -280,24 +284,24 @@ class Parser:
 
     # Follows the pseudo-code here:
     # https://github.com/schismtracker/schismtracker/wiki/ITTECH.TXT#impulse-pattern-format
-    def _parse_packed_pattern_rows(self, num_rows: int) -> list:
-        rows = []
-        channel_masks = {}
-        channel_notes = {}
-        channel_instrs = {}
-        channel_volpans = {}
-        channel_comms = {}
+    def _parse_packed_pattern_rows(self, num_rows: int) -> list[dict[int, Any]]:
+        rows: list[dict[int, Any]] = []
+        channel_masks: dict[int, Any] = {}
+        channel_notes: dict[int, int] = {}
+        channel_instrs: dict[int, int] = {}
+        channel_volpans: dict[int, int] = {}
+        channel_comms: dict[int, Any] = {}
 
-        def parse_packed_pattern_row():
+        def parse_packed_pattern_row() -> None:
             self.sub(
                 f"parse_packed_pattern_row()",
                 lambda sub: _parse_packed_pattern_row(sub),
             )
 
-        def _parse_packed_pattern_row(self):
-            row = {}
+        def _parse_packed_pattern_row(self: Parser):
+            row: dict[int, Any] = {}
 
-            def get_next_channel_marker():
+            def get_next_channel_marker() -> None:
                 channel_variable = self.read_u8("channel_variable")
                 self.log(f"channel_variable: {bin(channel_variable)}")
                 if channel_variable == 0:
@@ -357,8 +361,8 @@ class Parser:
         return rows
 
     # https://github.com/schismtracker/schismtracker/wiki/ITTECH.TXT#impulse-pattern-format
-    def parse_patterns(self, offsets: list[int]) -> list:
-        patterns = []
+    def parse_patterns(self, offsets: list[int]) -> list[list[dict[int, Any]]]:
+        patterns: list[list[dict[int, Any]]] = []
 
         for pos in offsets:
             self.f.seek(pos)
@@ -379,13 +383,13 @@ class Parser:
 
         return patterns
 
-    def parse_chunk(self, expected_id: bytes):
+    def parse_chunk(self, expected_id: bytes) -> dict[Any, Any]:
         return self.sub(
             f"parse_chunk('{expected_id.decode('ascii')}')",
             lambda sub: sub._parse_chunk(expected_id),
         )
 
-    def _parse_chunk(self, expected_id: bytes):
+    def _parse_chunk(self, expected_id: bytes) -> dict[Any, Any]:
         chunk_start = self.f.tell()
 
         x228 = self.read_bytes(3, "x228")
@@ -396,7 +400,9 @@ class Parser:
         chunk_id = self.read_bytes(id_len, "chunk_id")
 
         if chunk_id != expected_id:
-            raise ValueError(f"expected chunk id {expected_id}; got {chunk_id}")
+            raise ValueError(
+                f"expected chunk id {str(expected_id)}; got {str(chunk_id)}"
+            )
 
         header_constants = self.read_bytes(4, "header_constants")
 
@@ -404,7 +410,7 @@ class Parser:
         # header data; see
         # https://wiki.openmpt.org/Development:_228_Extensions#228_Chunks_in_MPTM_Files
         if header_constants != b"\x1f\x08\x00\x01":
-            raise ValueError(f"unexpected header constants: {header_constants}")
+            raise ValueError(f"unexpected header constants: {str(header_constants)}")
 
         # Numeric version number (exists because bit 4 of the header byte (1F) is set)
         self.read_auint64()
@@ -431,16 +437,16 @@ class Parser:
         elif chunk_id == b"mptP":
             return self.parse_mptm_map(chunk_id, chunk_start, num_entries)
         else:
-            raise ValueError(f"unknown chunk with id: {chunk_id}")
+            raise ValueError(f"unknown chunk with id: {str(chunk_id)}")
 
     def parse_mptm_map(
         self,
         parent_chunk_id: bytes,
         chunk_start: int,
         num_entries: int,
-    ):
+    ) -> dict[Any, Any]:
         return self.sub(
-            f"parse_mptm_map({parent_chunk_id}, {chunk_start}, {num_entries})",
+            f"parse_mptm_map({str(parent_chunk_id)}, {str(chunk_start)}, {str(num_entries)})",
             lambda sub: sub._parse_mptm_map(parent_chunk_id, chunk_start, num_entries),
         )
 
@@ -449,8 +455,8 @@ class Parser:
         parent_chunk_id: bytes,
         chunk_start: int,
         num_entries: int,
-    ):
-        map = {}
+    ) -> dict[Any, Any]:
+        map: dict[str, Any] = {}
 
         for i in range(0, num_entries):
             self.log(f"--- map entry {i}", self.f.tell())
@@ -477,7 +483,7 @@ class Parser:
                 c = self.read_u8("c")
                 map["default_seq"] = c
             elif parent_chunk_id == b"mptSeqC":  # `id` varies (b'\x00', b'\x01', etc.)
-                self.log(f"sequence id: {id}")
+                self.log(f"sequence id: {str(id)}")
                 entry = self.parse_chunk(b"mptSeq")
                 map[id_str] = entry
             elif id == b"u" and parent_chunk_id == b"mptSeq":
@@ -485,14 +491,14 @@ class Parser:
                 if not (u == 1):
                     raise ValueError("sequence name encoding is not 1")
             elif id == b"n" and parent_chunk_id == b"mptSeq":
-                self.log(f"id: {id} -- skipping value at {hex(entry_ptr)}")
+                self.log(f"id: {str(id)} -- skipping value at {hex(entry_ptr)}")
             elif id == b"l" and parent_chunk_id == b"mptSeq":
                 l = self.read_u8("l")
                 map["seq_len"] = l
             elif id == b"a" and parent_chunk_id == b"mptSeq":
                 # Assume that the above 'l' chunk has already been parsed
-                len = map["seq_len"]
-                orders = [None] * len
+                len: int = map["seq_len"]
+                orders = [0] * len
                 for i in range(0, len):
                     orders[i] = self.read_u16(f"orders[{i}]")
                 map["orders"] = orders
@@ -514,7 +520,7 @@ class Parser:
                 self.log("skipping SWNG field in mptP chunk")
             else:
                 raise ValueError(
-                    f"unknown entry in chunk {parent_chunk_id} -- id_str: {id}"
+                    f"unknown entry in chunk {str(parent_chunk_id)} -- id_str: {str(id)}"
                 )
 
             self.f.seek(pos)
@@ -526,9 +532,9 @@ class Parser:
         parent_chunk_id: bytes,
         chunk_start: int,
         num_entries: int,
-    ):
+    ) -> dict[Any, Any]:
         return self.sub(
-            f"parse_mptm_collection({parent_chunk_id}, {chunk_start}, {num_entries})",
+            f"parse_mptm_collection({str(parent_chunk_id)}, {str(chunk_start)}, {str(num_entries)})",
             lambda sub: sub._parse_mptm_collection(
                 parent_chunk_id, chunk_start, num_entries
             ),
@@ -539,8 +545,8 @@ class Parser:
         parent_chunk_id: bytes,
         chunk_start: int,
         num_entries: int,
-    ):
-        collection = {}
+    ) -> dict[Any, Any]:
+        collection: dict[Any, Any] = {}
 
         for i in range(0, num_entries):
             self.log(f"--- collection entry {i}", self.f.tell())
@@ -562,13 +568,13 @@ class Parser:
                 else:
                     self.read_u16("num")
             else:
-                raise ValueError(f"unknown entry id: {id}")
+                raise ValueError(f"unknown entry id: {str(id)}")
 
             self.f.seek(pos)
 
         return collection
 
-    def parse_mptm_data(self):
+    def parse_mptm_data(self) -> dict[Any, Any]:
         # Pointer to the MPTM structure is found in the last four bytes of the file
         self.f.seek(-4, os.SEEK_END)
         mptm_pos = self.read_u32("mptm_pos")
@@ -576,7 +582,7 @@ class Parser:
 
         return self.parse_chunk(b"mptm")
 
-    def parse_track(self):
+    def parse_track(self) -> dict[Any, Any]:
         header = self.parse_it_header()
         patterns = self.parse_patterns(header["pattern_offsets"])
         self.log()

@@ -5,7 +5,8 @@ import sys
 from logger import Logger, SilentLogger
 from mptm_parser import Parser
 
-def main(path, debug):
+
+def main(path: str, debug: bool):
     if debug:
         logger = Logger()
     else:

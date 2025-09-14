@@ -16,24 +16,26 @@
 import pprint
 import textwrap
 
+
 class Logger:
     def __init__(self, indent: int = 0):
         self.indent = indent
 
     def log(self, message: str = "", tag: str = ""):
         tag_len = 8
-        padded_tag = (tag + (' ' * tag_len))[:tag_len]
+        padded_tag = (tag + (" " * tag_len))[:tag_len]
         print(textwrap.indent(f"{' ' * self.indent}{message}", padded_tag))
 
     def log_format(self, message: str, tag: str = ""):
         self.log(pprint.pformat(message, compact=True, sort_dicts=False), tag)
 
-    def new(self, additional_indent: int):
+    def new(self, additional_indent: int) -> "Logger":
         return Logger(self.indent + additional_indent)
+
 
 class SilentLogger(Logger):
     def log(self, message: str = "", tag: str = ""):
         pass
 
-    def new(self, additional_indent: int):
+    def new(self, additional_indent: int) -> "SilentLogger":
         return SilentLogger()
