@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from dataclasses import dataclass
 from io import BufferedReader
 import os
 import struct
@@ -139,7 +140,24 @@ def read_cstr(b: bytes) -> str:
 T = TypeVar("T")
 
 ITHeader = dict[str, Any]
-Row = dict[int, Any]
+
+
+class Command:
+    c1: int
+    c2: int
+
+
+@dataclass(frozen=True)
+class Cell:
+    instrument: Optional[int]
+    note: Optional[int]
+    vol_pan: Optional[int]
+    command: Optional[Command]
+
+
+Channel = int
+
+Row = dict[Channel, Cell]
 Pattern = list[Row]
 
 
@@ -296,6 +314,14 @@ class Parser:
         channel_volpans: dict[int, int] = {}
         channel_comms: dict[int, Any] = {}
 
+        def mk_cell(cell: dict[str, Any]) -> Cell:
+            return Cell(
+                instrument=cell.get("instr"),
+                note=cell.get("note"),
+                vol_pan=cell.get("vol_pan"),
+                command=cell.get("command"),
+            )
+
         def parse_packed_pattern_row() -> None:
             self.sub(
                 f"parse_packed_pattern_row()",
@@ -303,7 +329,7 @@ class Parser:
             )
 
         def _parse_packed_pattern_row(self: Parser):
-            row: Row = {}
+            row: dict[int, dict[str, Any]] = {}
 
             def get_next_channel_marker() -> None:
                 channel_variable = self.read_u8("channel_variable")
@@ -356,7 +382,9 @@ class Parser:
                 get_next_channel_marker()
 
             get_next_channel_marker()
-            rows.append(row)
+
+            row2 = {channel: mk_cell(note) for channel, note in row.items()}
+            rows.append(row2)
 
         for i in range(0, num_rows):
             self.log(f"row {i}", self.f.tell())
