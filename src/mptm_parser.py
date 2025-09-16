@@ -419,18 +419,18 @@ class Parser:
 
         return patterns
 
-    def parse_chunk(self, expected_id: bytes) -> Optional[dict[Any, Any]]:
+    def parse_chunk(self, expected_id: bytes) -> dict[Any, Any]:
         return self.sub(
             f"parse_chunk('{expected_id.decode('ascii')}')",
             lambda sub: sub._parse_chunk(expected_id),
         )
 
-    def _parse_chunk(self, expected_id: bytes) -> Optional[dict[Any, Any]]:
+    def _parse_chunk(self, expected_id: bytes) -> dict[Any, Any]:
         chunk_start = self.f.tell()
 
         x228 = self.read_bytes(3, "x228")
         if x228 != b"228":
-            return None
+            raise ValueError("chunk is not a 228 container")
 
         id_len = self.read_u8("id_len")
         chunk_id = self.read_bytes(id_len, "chunk_id")
@@ -610,7 +610,7 @@ class Parser:
 
         return collection
 
-    def parse_mptm_data(self) -> Optional[dict[Any, Any]]:
+    def parse_mptm_data(self) -> dict[Any, Any]:
         # Pointer to the MPTM structure is found in the last four bytes of the file
         self.f.seek(-4, os.SEEK_END)
         mptm_pos = self.read_u32("mptm_pos")
