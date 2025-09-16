@@ -419,13 +419,13 @@ class Parser:
 
         return patterns
 
-    def parse_chunk(self, expected_id: bytes) -> dict[Any, Any]:
+    def parse_mptm_chunk(self, expected_id: bytes) -> dict[Any, Any]:
         return self.sub(
-            f"parse_chunk('{expected_id.decode('ascii')}')",
-            lambda sub: sub._parse_chunk(expected_id),
+            f"parse_mptm_chunk('{expected_id.decode('ascii')}')",
+            lambda sub: sub._parse_mptm_chunk(expected_id),
         )
 
-    def _parse_chunk(self, expected_id: bytes) -> dict[Any, Any]:
+    def _parse_mptm_chunk(self, expected_id: bytes) -> dict[Any, Any]:
         chunk_start = self.f.tell()
 
         x228 = self.read_bytes(3, "x228")
@@ -507,10 +507,10 @@ class Parser:
             self.f.seek(entry_ptr)
 
             if id == b"mptPc":  # Extended pattern collection
-                entry = self.parse_chunk(id)
+                entry = self.parse_mptm_chunk(id)
                 map[id_str] = entry
             elif id == b"mptSeqC":
-                entry = self.parse_chunk(id)
+                entry = self.parse_mptm_chunk(id)
                 map[id_str] = entry
             elif id == b"n" and parent_chunk_id == b"mptSeqC":
                 n = self.read_u8("n")
@@ -520,7 +520,7 @@ class Parser:
                 map["default_seq"] = c
             elif parent_chunk_id == b"mptSeqC":  # `id` varies (b'\x00', b'\x01', etc.)
                 self.log(f"sequence id: {str(id)}")
-                entry = self.parse_chunk(b"mptSeq")
+                entry = self.parse_mptm_chunk(b"mptSeq")
                 map[id_str] = entry
             elif id == b"u" and parent_chunk_id == b"mptSeq":
                 u = self.read_u8("u")
@@ -599,7 +599,7 @@ class Parser:
             if parent_chunk_id == b"mptPc":
                 if id != b"num":
                     id_num = read_u16(id)
-                    entry = self.parse_chunk(b"mptP")
+                    entry = self.parse_mptm_chunk(b"mptP")
                     collection[id_num] = entry
                 else:
                     self.read_u16("num")
@@ -616,7 +616,7 @@ class Parser:
         mptm_pos = self.read_u32("mptm_pos")
         self.f.seek(mptm_pos)
 
-        return self.parse_chunk(b"mptm")
+        return self.parse_mptm_chunk(b"mptm")
 
     def parse_track(self, mptm_extensions: bool) -> dict[Any, Any]:
         header = self.parse_it_header()
