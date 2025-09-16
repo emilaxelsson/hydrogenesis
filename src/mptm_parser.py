@@ -298,6 +298,44 @@ class Parser:
             "pattern_offsets": pattern_offsets,
         }
 
+    def parse_pnam(self) -> list[str]:
+        magic_bytes = self.read_bytes(4, "magic_bytes")
+        if magic_bytes != b"PNAM":
+            raise ValueError("expected a PNAM chunk")
+        size = self.read_u32("size")
+        number_of_pattnern_names = int(size / 32)
+        self.log(f"number_of_pattnern_names = {number_of_pattnern_names}")
+
+        names: list[str] = []
+
+        pos_before_list = self.f.tell()
+
+        for i in range(0, number_of_pattnern_names):
+            self.f.seek(pos_before_list + i * 32)
+            name = self.read_cstr(32, "name")
+            names.append(name)
+
+        return names
+
+    def parse_mp_extensions(self) -> Optional[dict[str, Any]]:
+        # `section_start` must be right after the header
+        section_start = self.f.tell()
+
+        self.log()
+        self.log("parse_mp_extensions", section_start)
+
+        # Assuming that the extensions don't require more than 10000 bytes to avoid
+        # reading too much into memory. A better option would be to loop over `self.f`.
+        section = self.f.read(10_000)
+        pnam_pos = section.find(b"PNAM")
+
+        if pnam_pos < 0:
+            return None
+        else:
+            self.f.seek(section_start + pnam_pos)
+            names = self.parse_pnam()
+            return {"names": names}
+
     def parse_packed_pattern_rows(self, num_rows: int) -> list[Row]:
         return self.sub(
             f"parse_packed_pattern_rows({num_rows})",
@@ -620,6 +658,7 @@ class Parser:
 
     def parse_track(self, mptm_extensions: bool) -> dict[Any, Any]:
         header = self.parse_it_header()
+        mp = self.parse_mp_extensions()
         patterns = self.parse_patterns(header["pattern_offsets"])
         self.log()
 
@@ -631,5 +670,6 @@ class Parser:
         return {
             "header": header,
             "patterns": patterns,
-            "mptm": mptm,
+            "mp_extensions": mp,
+            "mptm_extensions": mptm,
         }
