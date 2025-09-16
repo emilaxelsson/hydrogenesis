@@ -15,7 +15,8 @@ def main(path: str, debug: bool):
     p = Path(path)
     with p.open("rb") as f:
         pa = Parser(f, logger)
-        parsed_track = pa.parse_track()
+        mptm = p.suffix.lower() == ".mptm"
+        parsed_track = pa.parse_track(mptm_extensions=mptm)
 
     pprint.pprint(parsed_track)
 

@@ -618,11 +618,15 @@ class Parser:
 
         return self.parse_chunk(b"mptm")
 
-    def parse_track(self) -> dict[Any, Any]:
+    def parse_track(self, mptm_extensions: bool) -> dict[Any, Any]:
         header = self.parse_it_header()
         patterns = self.parse_patterns(header["pattern_offsets"])
         self.log()
-        mptm = self.parse_mptm_data()
+
+        if mptm_extensions:
+            mptm = self.parse_mptm_data()
+        else:
+            mptm = None
 
         return {
             "header": header,
