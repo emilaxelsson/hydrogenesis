@@ -397,20 +397,24 @@ class Parser:
         patterns: list[Pattern] = []
 
         for pos in offsets:
-            self.f.seek(pos)
+            if pos == 0:
+                rows: list[Row] = [{}] * 64
+            else:
+                self.f.seek(pos)
 
-            self.log()
-            self.log(f"Parsing pattern", self.f.tell())
+                self.log()
+                self.log(f"Parsing pattern", self.f.tell())
 
-            # Skip length
-            self.f.read(2)
+                # Skip length
+                self.f.read(2)
 
-            num_rows = self.read_u16()
+                num_rows = self.read_u16()
 
-            # Skip unused bytes
-            self.f.read(4)
+                # Skip unused bytes
+                self.f.read(4)
 
-            rows = self.parse_packed_pattern_rows(num_rows)
+                rows = self.parse_packed_pattern_rows(num_rows)
+
             patterns.append(rows)
 
         return patterns
