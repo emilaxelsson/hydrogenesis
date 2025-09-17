@@ -276,8 +276,12 @@ class Parser:
             i[0] for i in instrument_offsets
         ]  # Get first component of tuple
 
-        # Skip sample offsets
-        self.f.read(smpnum * 4)
+        sample_offsets = list(
+            struct.iter_unpack("<I", self.read_bytes(smpnum * 4, "sample_offsets"))
+        )
+        sample_offsets = [
+            i[0] for i in sample_offsets
+        ]
 
         pattern_offsets = list(
             struct.iter_unpack("<I", self.read_bytes(patnum * 4, "pattern_offsets"))
@@ -295,6 +299,7 @@ class Parser:
             "initial_speed": initial_speed,  # ticks per row
             "initial_tempo": initial_tempo,
             "instrument_offsets": instrument_offsets,
+            "sample_offsets": sample_offsets,
             "pattern_offsets": pattern_offsets,
         }
 

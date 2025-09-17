@@ -25,6 +25,7 @@ class TestMptmParser(unittest.TestCase):
                     "ordnum": 2,
                     # Note: pattern offset 0 indicates a pattern with 64 empty rows
                     "pattern_offsets": [0],
+                    "sample_offsets": [212],
                     "songname": "",
                 },
             )
@@ -52,6 +53,7 @@ class TestMptmParser(unittest.TestCase):
                     "ordnum": 4,
                     # Note: pattern offset 0 indicates a pattern with 64 empty rows
                     "pattern_offsets": [338, 0],
+                    "sample_offsets": [258],
                     "songname": "Test1",
                 },
             )
