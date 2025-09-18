@@ -12,7 +12,7 @@ class TestMptmParser(unittest.TestCase):
             track = pa.parse_track(mptm_extensions=False)
 
             self.assertEqual(
-                track["header"],
+                track.header,
                 ITHeader(
                     cmwt=532,
                     cwtv=20786,
@@ -26,9 +26,9 @@ class TestMptmParser(unittest.TestCase):
                 ),
             )
 
-            self.assertEqual(track["mp_extensions"], MPExtensions(names=None))
-            self.assertEqual(track["mptm_extensions"], None)
-            self.assertEqual(track["patterns"], [[{}] * 64])
+            self.assertEqual(track.mp_extensions, MPExtensions(names=None))
+            self.assertEqual(track.mptm_extensions, None)
+            self.assertEqual(track.patterns, [[{}] * 64])
 
     def test_can_parse_test1(self):
         with Path("test/test1.it").open("rb") as f:
@@ -36,7 +36,7 @@ class TestMptmParser(unittest.TestCase):
             track = pa.parse_track(mptm_extensions=False)
 
             self.assertEqual(
-                track["header"],
+                track.header,
                 ITHeader(
                     cmwt=532,
                     cwtv=20786,
@@ -50,9 +50,9 @@ class TestMptmParser(unittest.TestCase):
                 ),
             )
 
-            self.assertEqual(track["mp_extensions"], MPExtensions(names=["Pattern 1"]))
-            self.assertEqual(track["mptm_extensions"], None)
-            self.assertEqual(track["patterns"], [[{}] * 16, [{}] * 64])
+            self.assertEqual(track.mp_extensions, MPExtensions(names=["Pattern 1"]))
+            self.assertEqual(track.mptm_extensions, None)
+            self.assertEqual(track.patterns, [[{}] * 16, [{}] * 64])
 
 
 if __name__ == "__main__":

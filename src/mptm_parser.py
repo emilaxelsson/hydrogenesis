@@ -185,6 +185,14 @@ Row = dict[Channel, Cell]
 Pattern = list[Row]
 
 
+@dataclass(frozen=True)
+class Track:
+    header: ITHeader
+    patterns: list[Pattern]
+    mp_extensions: MPExtensions
+    mptm_extensions: Optional[dict[Any, Any]]
+
+
 class Parser:
     def __init__(self, f: BufferedReader, logger: Logger):
         self.f = f
@@ -738,7 +746,7 @@ class Parser:
 
         return self.parse_mptm_chunk(b"mptm")
 
-    def parse_track(self, mptm_extensions: bool) -> dict[Any, Any]:
+    def parse_track(self, mptm_extensions: bool) -> Track:
         (header, offsets) = self.parse_it_header()
         mp = self.parse_mp_extensions(offsets)
         patterns = self.parse_patterns(offsets.pattern_offsets)
@@ -749,9 +757,9 @@ class Parser:
         else:
             mptm = None
 
-        return {
-            "header": header,
-            "patterns": patterns,
-            "mp_extensions": mp,
-            "mptm_extensions": mptm,
-        }
+        return Track(
+            header=header,
+            patterns=patterns,
+            mp_extensions=mp,
+            mptm_extensions=mptm,
+        )
