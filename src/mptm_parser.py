@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from io import BufferedReader
 import os
 import struct
-from typing import Any, Callable, cast, Optional, TypeVar
+from typing import Any, Callable, Tuple, cast, Optional, TypeVar
 
 from logger import Logger
 
@@ -139,9 +139,28 @@ def read_cstr(b: bytes) -> str:
 
 T = TypeVar("T")
 
-ITHeader = dict[str, Any]
+
+@dataclass(frozen=True)
+class ITHeader:
+    songname: str
+    ordnum: int
+    num_instruments: int
+    num_samples: int
+    num_patterns: int
+    cwtv: int
+    cmwt: int
+    initial_speed: int  # ticks per row
+    initial_tempo: int
 
 
+@dataclass(frozen=True)
+class OffsetTables:
+    instrument_offsets: list[int]
+    sample_offsets: list[int]
+    pattern_offsets: list[int]
+
+
+@dataclass(frozen=True)
 class Command:
     c1: int
     c2: int
@@ -241,10 +260,10 @@ class Parser:
         self.log_read("bytes", str(b), pos, var)
         return b
 
-    def parse_it_header(self) -> ITHeader:
+    def parse_it_header(self) -> Tuple[ITHeader, OffsetTables]:
         return self.sub("parse_it_header()", lambda sub: sub._parse_it_header())
 
-    def _parse_it_header(self) -> ITHeader:
+    def _parse_it_header(self) -> Tuple[ITHeader, OffsetTables]:
         signature = self.read_bytes(4, "signature")
 
         if signature != b"IMPM":
@@ -278,34 +297,38 @@ class Parser:
         instrument_offsets = list(
             struct.iter_unpack("<I", self.read_bytes(insnum * 4, "instrument_offsets"))
         )
-        instrument_offsets = [
+        instrument_offsets_2 = [
             i[0] for i in instrument_offsets
         ]  # Get first component of tuple
 
         sample_offsets = list(
             struct.iter_unpack("<I", self.read_bytes(smpnum * 4, "sample_offsets"))
         )
-        sample_offsets = [i[0] for i in sample_offsets]
+        sample_offsets_2 = [i[0] for i in sample_offsets]
 
         pattern_offsets = list(
             struct.iter_unpack("<I", self.read_bytes(patnum * 4, "pattern_offsets"))
         )
-        pattern_offsets = [i[0] for i in pattern_offsets]
+        pattern_offsets_2 = [i[0] for i in pattern_offsets]
 
-        return {
-            "songname": song_name,
-            "ordnum": ordnum,
-            "num_instruments": insnum,
-            "num_samples": smpnum,
-            "num_patterns": patnum,
-            "cwtv": cwtv,
-            "cmwt": cmwt,
-            "initial_speed": initial_speed,  # ticks per row
-            "initial_tempo": initial_tempo,
-            "instrument_offsets": instrument_offsets,
-            "sample_offsets": sample_offsets,
-            "pattern_offsets": pattern_offsets,
-        }
+        return (
+            ITHeader(
+                songname=song_name,
+                ordnum=ordnum,
+                num_instruments=insnum,
+                num_samples=smpnum,
+                num_patterns=patnum,
+                cwtv=cwtv,
+                cmwt=cmwt,
+                initial_speed=initial_speed,
+                initial_tempo=initial_tempo,
+            ),
+            OffsetTables(
+                instrument_offsets=instrument_offsets_2,
+                sample_offsets=sample_offsets_2,
+                pattern_offsets=pattern_offsets_2,
+            ),
+        )
 
     def parse_pnam(self) -> list[str]:
         magic_bytes = self.read_bytes(4, "magic_bytes")
@@ -340,7 +363,7 @@ class Parser:
     # for extension chunks includes some unrelated data (at least the leading unknown data
     # mentioned above). What if that data happens to contain the magic bytes we're looking
     # for?
-    def parse_mp_extensions(self, it_header: ITHeader) -> Optional[dict[str, Any]]:
+    def parse_mp_extensions(self, offsets: OffsetTables) -> Optional[dict[str, Any]]:
         # `section_start` should be right after the header
         section_start = self.f.tell()
 
@@ -348,19 +371,17 @@ class Parser:
         self.log("parse_mp_extensions", section_start)
 
         # A pattern offset of 0 is a shorthand for an empty 64-row pattern
-        pattern_offsets_without_0 = filter(
-            lambda o: o != 0, it_header["pattern_offsets"]
-        )
+        pattern_offsets_without_0 = filter(lambda o: o != 0, offsets.pattern_offsets)
 
-        offsets = (
-            it_header["instrument_offsets"]
-            + it_header["sample_offsets"]
+        all_offsets = (
+            offsets.instrument_offsets
+            + offsets.sample_offsets
             + list(pattern_offsets_without_0)
         )
 
         # The position right after the end of the region that may contain ModPlug
         # extension chunks, or `None` if no position can be determined
-        pos_after_region: int | None = min(offsets, default=None)
+        pos_after_region: int | None = min(all_offsets, default=None)
 
         if pos_after_region is None:
             # If `pos_after_region` couldn't be determined, it means there isn't any
@@ -713,9 +734,9 @@ class Parser:
         return self.parse_mptm_chunk(b"mptm")
 
     def parse_track(self, mptm_extensions: bool) -> dict[Any, Any]:
-        header = self.parse_it_header()
-        mp = self.parse_mp_extensions(header)
-        patterns = self.parse_patterns(header["pattern_offsets"])
+        (header, offsets) = self.parse_it_header()
+        mp = self.parse_mp_extensions(offsets)
+        patterns = self.parse_patterns(offsets.pattern_offsets)
         self.log()
 
         if mptm_extensions:

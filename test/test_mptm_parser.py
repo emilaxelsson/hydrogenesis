@@ -2,7 +2,7 @@ from pathlib import Path
 import unittest
 
 from logger import SilentLogger
-from mptm_parser import Parser
+from mptm_parser import ITHeader, Parser
 
 
 class TestMptmParser(unittest.TestCase):
@@ -13,21 +13,17 @@ class TestMptmParser(unittest.TestCase):
 
             self.assertEqual(
                 track["header"],
-                {
-                    "cmwt": 532,
-                    "cwtv": 20786,
-                    "initial_speed": 6,
-                    "initial_tempo": 125,
-                    "instrument_offsets": [],
-                    "num_instruments": 0,
-                    "num_patterns": 1,
-                    "num_samples": 1,
-                    "ordnum": 2,
-                    # Note: pattern offset 0 indicates a pattern with 64 empty rows
-                    "pattern_offsets": [0],
-                    "sample_offsets": [212],
-                    "songname": "",
-                },
+                ITHeader(
+                    cmwt=532,
+                    cwtv=20786,
+                    initial_speed=6,
+                    initial_tempo=125,
+                    num_instruments=0,
+                    num_patterns=1,
+                    num_samples=1,
+                    ordnum=2,
+                    songname="",
+                ),
             )
 
             self.assertEqual(track["mp_extensions"], None)
@@ -41,21 +37,17 @@ class TestMptmParser(unittest.TestCase):
 
             self.assertEqual(
                 track["header"],
-                {
-                    "cmwt": 532,
-                    "cwtv": 20786,
-                    "initial_speed": 5,
-                    "initial_tempo": 120,
-                    "instrument_offsets": [],
-                    "num_instruments": 0,
-                    "num_patterns": 2,
-                    "num_samples": 1,
-                    "ordnum": 4,
-                    # Note: pattern offset 0 indicates a pattern with 64 empty rows
-                    "pattern_offsets": [338, 0],
-                    "sample_offsets": [258],
-                    "songname": "Test1",
-                },
+                ITHeader(
+                    cmwt=532,
+                    cwtv=20786,
+                    initial_speed=5,
+                    initial_tempo=120,
+                    num_instruments=0,
+                    num_patterns=2,
+                    num_samples=1,
+                    ordnum=4,
+                    songname="Test1",
+                ),
             )
 
             self.assertEqual(track["mp_extensions"], {"names": ["Pattern 1"]})
