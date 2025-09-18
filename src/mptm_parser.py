@@ -266,6 +266,12 @@ class Parser:
         initial_speed = self.read_u8("initial_speed")
         initial_tempo = self.read_u8("initial_tempo")
 
+        self.read_u8()
+        self.read_u8()
+
+        self.read_u16("message_length")
+        self.read_u32("message_offset")
+
         # Skip orders, because they are replicated in the MPTM chunk
         self.f.seek(0xC0 + ordnum)
 
@@ -279,9 +285,7 @@ class Parser:
         sample_offsets = list(
             struct.iter_unpack("<I", self.read_bytes(smpnum * 4, "sample_offsets"))
         )
-        sample_offsets = [
-            i[0] for i in sample_offsets
-        ]
+        sample_offsets = [i[0] for i in sample_offsets]
 
         pattern_offsets = list(
             struct.iter_unpack("<I", self.read_bytes(patnum * 4, "pattern_offsets"))
@@ -322,24 +326,71 @@ class Parser:
 
         return names
 
-    def parse_mp_extensions(self) -> Optional[dict[str, Any]]:
-        # `section_start` must be right after the header
+    # Ideally, this function would just read the chunks it finds in sequence, stopping
+    # when the data can no longer be parsed as a chunk of known type. However, it seems
+    # that OpenMPT inserts extra data between the IT header and the first ModPlug
+    # extension chunk. I don't know what this data is, so I cannot determine where the
+    # extension chunks start.
+    #
+    # What we do know from the header is where the sample/instrument/pattern data starts
+    # (the lowest offset pointer), so any ModPlug extensions must occur before that.
+    # Hence, we simply search for extensions (by looking for magic bytes) in that region.
+    #
+    # Potential (but unlikely) problem with this approach: The region in which we search
+    # for extension chunks includes some unrelated data (at least the leading unknown data
+    # mentioned above). What if that data happens to contain the magic bytes we're looking
+    # for?
+    def parse_mp_extensions(self, it_header: ITHeader) -> Optional[dict[str, Any]]:
+        # `section_start` should be right after the header
         section_start = self.f.tell()
 
         self.log()
         self.log("parse_mp_extensions", section_start)
 
-        # Assuming that the extensions don't require more than 10000 bytes to avoid
-        # reading too much into memory. A better option would be to loop over `self.f`.
-        section = self.f.read(10_000)
+        # A pattern offset of 0 is a shorthand for an empty 64-row pattern
+        pattern_offsets_without_0 = filter(
+            lambda o: o != 0, it_header["pattern_offsets"]
+        )
+
+        offsets = (
+            it_header["instrument_offsets"]
+            + it_header["sample_offsets"]
+            + list(pattern_offsets_without_0)
+        )
+
+        # The position right after the end of the region that may contain ModPlug
+        # extension chunks, or `None` if no position can be determined
+        pos_after_region: int | None = min(offsets, default=None)
+
+        if pos_after_region is None:
+            # If `pos_after_region` couldn't be determined, it means there isn't any
+            # pattern data, so then it doesn't make sense to look for extensions anyway
+            self.log(
+                "could not determine size of ModPlug extensions region, skipping extensions"
+            )
+            return None
+
+        self.log(f"pos_after_region: {hex(pos_after_region)}")
+
+        region_size = pos_after_region - self.f.tell()
+        self.log(f"region_size: {region_size}")
+
+        if region_size < 0:
+            raise ValueError("negative region size")
+
+        # Note: Reading region into memory. I don't think there can be a massive amount of
+        # data in the region, so this is probably fine.
+        section = self.f.read(region_size)
         pnam_pos = section.find(b"PNAM")
 
-        if pnam_pos < 0:
+        # If failed to find "PNAM"
+        if pnam_pos == -1:
             return None
-        else:
-            self.f.seek(section_start + pnam_pos)
-            names = self.parse_pnam()
-            return {"names": names}
+
+        self.f.seek(section_start + pnam_pos)
+        names = self.parse_pnam()
+
+        return {"names": names}
 
     def parse_packed_pattern_rows(self, num_rows: int) -> list[Row]:
         return self.sub(
@@ -663,7 +714,7 @@ class Parser:
 
     def parse_track(self, mptm_extensions: bool) -> dict[Any, Any]:
         header = self.parse_it_header()
-        mp = self.parse_mp_extensions()
+        mp = self.parse_mp_extensions(header)
         patterns = self.parse_patterns(header["pattern_offsets"])
         self.log()
 
