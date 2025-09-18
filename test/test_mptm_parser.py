@@ -2,7 +2,7 @@ from pathlib import Path
 import unittest
 
 from logger import SilentLogger
-from mptm_parser import ITHeader, Parser
+from mptm_parser import ITHeader, MPExtensions, Parser
 
 
 class TestMptmParser(unittest.TestCase):
@@ -26,7 +26,7 @@ class TestMptmParser(unittest.TestCase):
                 ),
             )
 
-            self.assertEqual(track["mp_extensions"], None)
+            self.assertEqual(track["mp_extensions"], MPExtensions(names=None))
             self.assertEqual(track["mptm_extensions"], None)
             self.assertEqual(track["patterns"], [[{}] * 64])
 
@@ -50,7 +50,7 @@ class TestMptmParser(unittest.TestCase):
                 ),
             )
 
-            self.assertEqual(track["mp_extensions"], {"names": ["Pattern 1"]})
+            self.assertEqual(track["mp_extensions"], MPExtensions(names=["Pattern 1"]))
             self.assertEqual(track["mptm_extensions"], None)
             self.assertEqual(track["patterns"], [[{}] * 16, [{}] * 64])
 

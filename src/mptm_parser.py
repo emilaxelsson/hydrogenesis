@@ -154,6 +154,11 @@ class ITHeader:
 
 
 @dataclass(frozen=True)
+class MPExtensions:
+    names: Optional[list[str]]
+
+
+@dataclass(frozen=True)
 class OffsetTables:
     instrument_offsets: list[int]
     sample_offsets: list[int]
@@ -363,7 +368,7 @@ class Parser:
     # for extension chunks includes some unrelated data (at least the leading unknown data
     # mentioned above). What if that data happens to contain the magic bytes we're looking
     # for?
-    def parse_mp_extensions(self, offsets: OffsetTables) -> Optional[dict[str, Any]]:
+    def parse_mp_extensions(self, offsets: OffsetTables) -> MPExtensions:
         # `section_start` should be right after the header
         section_start = self.f.tell()
 
@@ -389,7 +394,7 @@ class Parser:
             self.log(
                 "could not determine size of ModPlug extensions region, skipping extensions"
             )
-            return None
+            return MPExtensions(names=None)
 
         self.log(f"pos_after_region: {hex(pos_after_region)}")
 
@@ -406,12 +411,12 @@ class Parser:
 
         # If failed to find "PNAM"
         if pnam_pos == -1:
-            return None
+            names = None
+        else:
+            self.f.seek(section_start + pnam_pos)
+            names = self.parse_pnam()
 
-        self.f.seek(section_start + pnam_pos)
-        names = self.parse_pnam()
-
-        return {"names": names}
+        return MPExtensions(names=names)
 
     def parse_packed_pattern_rows(self, num_rows: int) -> list[Row]:
         return self.sub(
