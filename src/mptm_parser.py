@@ -190,7 +190,7 @@ class Track:
     header: ITHeader
     patterns: list[Pattern]
     mp_extensions: MPExtensions
-    mptm_extensions: Optional[dict[Any, Any]]
+    mptm_extensions: Optional[dict[str, Any]]
 
 
 class Parser:
@@ -547,13 +547,13 @@ class Parser:
 
         return patterns
 
-    def parse_mptm_chunk(self, expected_id: bytes) -> dict[Any, Any]:
+    def parse_mptm_chunk(self, expected_id: bytes) -> dict[str, Any]:
         return self.sub(
             f"parse_mptm_chunk('{expected_id.decode('ascii')}')",
             lambda sub: sub._parse_mptm_chunk(expected_id),
         )
 
-    def _parse_mptm_chunk(self, expected_id: bytes) -> dict[Any, Any]:
+    def _parse_mptm_chunk(self, expected_id: bytes) -> dict[str, Any]:
         chunk_start = self.f.tell()
 
         x228 = self.read_bytes(3, "x228")
@@ -608,7 +608,7 @@ class Parser:
         parent_chunk_id: bytes,
         chunk_start: int,
         num_entries: int,
-    ) -> dict[Any, Any]:
+    ) -> dict[str, Any]:
         return self.sub(
             f"parse_mptm_map({str(parent_chunk_id)}, {str(chunk_start)}, {str(num_entries)})",
             lambda sub: sub._parse_mptm_map(parent_chunk_id, chunk_start, num_entries),
@@ -619,7 +619,7 @@ class Parser:
         parent_chunk_id: bytes,
         chunk_start: int,
         num_entries: int,
-    ) -> dict[Any, Any]:
+    ) -> dict[str, Any]:
         map: dict[str, Any] = {}
 
         for i in range(0, num_entries):
@@ -691,12 +691,15 @@ class Parser:
 
         return map
 
+    # Result should really be a `list[Any]`, but returning `dict[str, Any]` so that
+    # `parse_mptm_chunk` can have a uniform result type. The keys are going to be indices
+    # in string form, but one isn't supposed to do lookups on key in the resulting dict.
     def parse_mptm_collection(
         self,
         parent_chunk_id: bytes,
         chunk_start: int,
         num_entries: int,
-    ) -> dict[Any, Any]:
+    ) -> dict[str, Any]:
         return self.sub(
             f"parse_mptm_collection({str(parent_chunk_id)}, {str(chunk_start)}, {str(num_entries)})",
             lambda sub: sub._parse_mptm_collection(
@@ -709,8 +712,8 @@ class Parser:
         parent_chunk_id: bytes,
         chunk_start: int,
         num_entries: int,
-    ) -> dict[Any, Any]:
-        collection: dict[Any, Any] = {}
+    ) -> dict[str, Any]:
+        collection: dict[str, Any] = {}
 
         for i in range(0, num_entries):
             self.log(f"--- collection entry {i}", self.f.tell())
@@ -726,9 +729,8 @@ class Parser:
 
             if parent_chunk_id == b"mptPc":
                 if id != b"num":
-                    id_num = read_u16(id)
                     entry = self.parse_mptm_chunk(b"mptP")
-                    collection[id_num] = entry
+                    collection[str(i)] = entry
                 else:
                     self.read_u16("num")
             else:
@@ -738,7 +740,7 @@ class Parser:
 
         return collection
 
-    def parse_mptm_data(self) -> dict[Any, Any]:
+    def parse_mptm_data(self) -> dict[str, Any]:
         # Pointer to the MPTM structure is found in the last four bytes of the file
         self.f.seek(-4, os.SEEK_END)
         mptm_pos = self.read_u32("mptm_pos")
