@@ -26,7 +26,7 @@ class TestMptmParser(unittest.TestCase):
                 ),
             )
 
-            self.assertEqual(track.mp_extensions, MPExtensions(names=None))
+            self.assertEqual(track.mp_extensions, MPExtensions(pattern_names=None))
             self.assertEqual(track.mptm_extensions, None)
             self.assertEqual(track.patterns, [[{}] * 64])
 
@@ -50,7 +50,7 @@ class TestMptmParser(unittest.TestCase):
                 ),
             )
 
-            self.assertEqual(track.mp_extensions, MPExtensions(names=["Pattern 1"]))
+            self.assertEqual(track.mp_extensions, MPExtensions(pattern_names=["Pattern 1"]))
             self.assertEqual(track.mptm_extensions, None)
             self.assertEqual(track.patterns, [[{}] * 16, [{}] * 64])
 

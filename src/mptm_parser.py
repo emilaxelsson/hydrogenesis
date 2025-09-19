@@ -155,7 +155,7 @@ class ITHeader:
 
 @dataclass(frozen=True)
 class MPExtensions:
-    names: Optional[list[str]]
+    pattern_names: Optional[list[str]]
 
 
 @dataclass(frozen=True)
@@ -351,16 +351,16 @@ class Parser:
         number_of_pattnern_names = int(size / 32)
         self.log(f"number_of_pattnern_names = {number_of_pattnern_names}")
 
-        names: list[str] = []
+        pattern_names: list[str] = []
 
         pos_before_list = self.f.tell()
 
         for i in range(0, number_of_pattnern_names):
             self.f.seek(pos_before_list + i * 32)
             name = self.read_cstr(32, "name")
-            names.append(name)
+            pattern_names.append(name)
 
-        return names
+        return pattern_names
 
     # Ideally, this function would just read the chunks it finds in sequence, stopping
     # when the data can no longer be parsed as a chunk of known type. However, it seems
@@ -402,7 +402,7 @@ class Parser:
             self.log(
                 "could not determine size of ModPlug extensions region, skipping extensions"
             )
-            return MPExtensions(names=None)
+            return MPExtensions(pattern_names=None)
 
         self.log(f"pos_after_region: {hex(pos_after_region)}")
 
@@ -419,12 +419,12 @@ class Parser:
 
         # If failed to find "PNAM"
         if pnam_pos == -1:
-            names = None
+            pattern_names = None
         else:
             self.f.seek(section_start + pnam_pos)
-            names = self.parse_pnam()
+            pattern_names = self.parse_pnam()
 
-        return MPExtensions(names=names)
+        return MPExtensions(pattern_names=pattern_names)
 
     def parse_packed_pattern_rows(self, num_rows: int) -> list[Row]:
         return self.sub(
