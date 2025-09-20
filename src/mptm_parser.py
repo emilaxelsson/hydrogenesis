@@ -556,13 +556,13 @@ class Parser:
 
         return patterns
 
-    def parse_mptm_chunk(self, expected_id: bytes, cont: Callable[[bytes, int, int], dict[str, Any]]) -> dict[str, Any]:
+    def parse_mptm_chunk(self, expected_id: bytes, cont: Callable[[bytes, int, int], T]) -> T:
         return self.sub(
             f"parse_mptm_chunk('{expected_id.decode('ascii')}')",
             lambda sub: sub._parse_mptm_chunk(expected_id, cont),
         )
 
-    def _parse_mptm_chunk(self, expected_id: bytes, cont: Callable[[bytes, int, int], dict[str, Any]]) -> dict[str, Any]:
+    def _parse_mptm_chunk(self, expected_id: bytes, cont: Callable[[bytes, int, int], T]) -> T:
         chunk_start = self.f.tell()
 
         x228 = self.read_bytes(3, "x228")
@@ -697,7 +697,7 @@ class Parser:
         parent_chunk_id: bytes,
         chunk_start: int,
         num_entries: int,
-    ) -> dict[str, Any]:
+    ) -> dict[int, Any]:
         return self.sub(
             f"parse_mptm_collection({str(parent_chunk_id)}, {str(chunk_start)}, {str(num_entries)})",
             lambda sub: sub._parse_mptm_collection(
@@ -710,8 +710,8 @@ class Parser:
         parent_chunk_id: bytes,
         chunk_start: int,
         num_entries: int,
-    ) -> dict[str, Any]:
-        collection: dict[str, Any] = {}
+    ) -> dict[int, Any]:
+        collection: dict[int, Any] = {}
 
         for i in range(0, num_entries):
             self.log(f"--- collection entry {i}", self.f.tell())
@@ -728,7 +728,7 @@ class Parser:
             if parent_chunk_id == b"mptPc":
                 if id != b"num":
                     entry = self.parse_mptm_chunk(b"mptP", self.parse_mptm_map)
-                    collection[str(i)] = entry
+                    collection[i] = entry
                 else:
                     self.read_u16("num")
             else:
