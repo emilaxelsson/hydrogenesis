@@ -447,7 +447,7 @@ class Parser:
                 instrument=cell.get("instr"),
                 note=cell.get("note"),
                 vol_pan=cell.get("vol_pan"),
-                command=cell.get("command"),
+                command=cell.get("comm"),
             )
 
         def parse_packed_pattern_row() -> None:
