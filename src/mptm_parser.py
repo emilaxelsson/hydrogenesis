@@ -15,6 +15,7 @@
 
 from dataclasses import dataclass
 from io import BufferedReader
+from itertools import takewhile
 import os
 import struct
 from typing import Any, Callable, Tuple, cast, Optional, TypeVar
@@ -151,6 +152,7 @@ class ITHeader:
     cmwt: int
     initial_speed: int  # ticks per row
     initial_tempo: int
+    orders: list[int]
 
 
 @dataclass(frozen=True)
@@ -304,25 +306,31 @@ class Parser:
         self.read_u16("message_length")
         self.read_u32("message_offset")
 
-        # Skip orders, because they are replicated in the MPTM chunk
-        self.f.seek(0xC0 + ordnum)
+        self.f.seek(0xC0)
 
-        instrument_offsets = list(
+        raw_orders_2 = list(struct.iter_unpack("<B", self.read_bytes(ordnum, "raw_orders")))
+        instrument_offsets_2 = list(
             struct.iter_unpack("<I", self.read_bytes(insnum * 4, "instrument_offsets"))
         )
-        instrument_offsets_2 = [
-            i[0] for i in instrument_offsets
-        ]  # Get first component of tuple
-
-        sample_offsets = list(
+        sample_offsets_2 = list(
             struct.iter_unpack("<I", self.read_bytes(smpnum * 4, "sample_offsets"))
         )
-        sample_offsets_2 = [i[0] for i in sample_offsets]
-
-        pattern_offsets = list(
+        pattern_offsets_2 = list(
             struct.iter_unpack("<I", self.read_bytes(patnum * 4, "pattern_offsets"))
         )
-        pattern_offsets_2 = [i[0] for i in pattern_offsets]
+
+        raw_orders: list[int] = [i[0] for i in raw_orders_2]  # Get first component of tuple
+        instrument_offsets: list[int] = [i[0] for i in instrument_offsets_2]
+        sample_offsets: list[int] = [i[0] for i in sample_offsets_2]
+        pattern_offsets: list[int] = [i[0] for i in pattern_offsets_2]
+
+        # 255 marks the end of the list
+        orders_prefix = takewhile(lambda o: o != 255, raw_orders)
+
+        # 0-199 are valid orders. 254 is said to mean "skip to next order", but we just
+        # skip any order >= 200.
+        orders = list(filter(lambda o: o < 200, orders_prefix))
+        self.log(f"orders = {orders}")
 
         return (
             ITHeader(
@@ -335,11 +343,12 @@ class Parser:
                 cmwt=cmwt,
                 initial_speed=initial_speed,
                 initial_tempo=initial_tempo,
+                orders=orders,
             ),
             OffsetTables(
-                instrument_offsets=instrument_offsets_2,
-                sample_offsets=sample_offsets_2,
-                pattern_offsets=pattern_offsets_2,
+                instrument_offsets=instrument_offsets,
+                sample_offsets=sample_offsets,
+                pattern_offsets=pattern_offsets,
             ),
         )
 
