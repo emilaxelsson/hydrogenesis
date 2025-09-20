@@ -556,13 +556,13 @@ class Parser:
 
         return patterns
 
-    def parse_mptm_chunk(self, expected_id: bytes, cont: Callable[[bytes, int, int], T]) -> T:
+    def parse_generic_mptm_chunk(self, expected_id: bytes, cont: Callable[[bytes, int, int], T]) -> T:
         return self.sub(
             f"parse_mptm_chunk('{expected_id.decode('ascii')}')",
-            lambda sub: sub._parse_mptm_chunk(expected_id, cont),
+            lambda sub: sub._parse_generic_mptm_chunk(expected_id, cont),
         )
 
-    def _parse_mptm_chunk(self, expected_id: bytes, cont: Callable[[bytes, int, int], T]) -> T:
+    def _parse_generic_mptm_chunk(self, expected_id: bytes, cont: Callable[[bytes, int, int], T]) -> T:
         chunk_start = self.f.tell()
 
         x228 = self.read_bytes(3, "x228")
@@ -633,10 +633,10 @@ class Parser:
             self.f.seek(entry_ptr)
 
             if id == b"mptPc":  # Extended pattern collection
-                entry = self.parse_mptm_chunk(id, self.parse_mptm_collection)
+                entry = self.parse_generic_mptm_chunk(id, self.parse_mptm_collection)
                 map[id_str] = entry
             elif id == b"mptSeqC":
-                entry = self.parse_mptm_chunk(id, self.parse_mptm_map)
+                entry = self.parse_generic_mptm_chunk(id, self.parse_mptm_map)
                 map[id_str] = entry
             elif id == b"n" and parent_chunk_id == b"mptSeqC":
                 n = self.read_u8("n")
@@ -646,7 +646,7 @@ class Parser:
                 map["default_seq"] = c
             elif parent_chunk_id == b"mptSeqC":  # `id` varies (b'\x00', b'\x01', etc.)
                 self.log(f"sequence id: {str(id)}")
-                entry = self.parse_mptm_chunk(b"mptSeq", self.parse_mptm_map)
+                entry = self.parse_generic_mptm_chunk(b"mptSeq", self.parse_mptm_map)
                 map[id_str] = entry
             elif id == b"u" and parent_chunk_id == b"mptSeq":
                 u = self.read_u8("u")
@@ -727,7 +727,7 @@ class Parser:
 
             if parent_chunk_id == b"mptPc":
                 if id != b"num":
-                    entry = self.parse_mptm_chunk(b"mptP", self.parse_mptm_map)
+                    entry = self.parse_generic_mptm_chunk(b"mptP", self.parse_mptm_map)
                     collection[i] = entry
                 else:
                     self.read_u16("num")
@@ -744,7 +744,7 @@ class Parser:
         mptm_pos = self.read_u32("mptm_pos")
         self.f.seek(mptm_pos)
 
-        return self.parse_mptm_chunk(b"mptm", self.parse_mptm_map)
+        return self.parse_generic_mptm_chunk(b"mptm", self.parse_mptm_map)
 
     def parse_track(self, mptm_extensions: bool) -> Track:
         (header, offsets) = self.parse_it_header()
