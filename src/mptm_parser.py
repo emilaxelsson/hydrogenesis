@@ -633,11 +633,9 @@ class Parser:
             self.f.seek(entry_ptr)
 
             if id == b"mptPc":  # Extended pattern collection
-                entry = self.parse_generic_mptm_chunk(id, self.parse_mptm_collection)
-                map[id_str] = entry
+                map[id_str] = self.parse_generic_mptm_chunk(id, self.parse_mptm_collection)
             elif id == b"mptSeqC":
-                entry = self.parse_generic_mptm_chunk(id, self.parse_mptm_map)
-                map[id_str] = entry
+                map[id_str] = self.parse_generic_mptm_chunk(id, self.parse_mptm_map)
             elif id == b"n" and parent_chunk_id == b"mptSeqC":
                 n = self.read_u8("n")
                 map["num_seqs_in_file"] = n
@@ -646,8 +644,7 @@ class Parser:
                 map["default_seq"] = c
             elif parent_chunk_id == b"mptSeqC":  # `id` varies (b'\x00', b'\x01', etc.)
                 self.log(f"sequence id: {str(id)}")
-                entry = self.parse_generic_mptm_chunk(b"mptSeq", self.parse_mptm_map)
-                map[id_str] = entry
+                map[id_str] = self.parse_generic_mptm_chunk(b"mptSeq", self.parse_mptm_map)
             elif id == b"u" and parent_chunk_id == b"mptSeq":
                 u = self.read_u8("u")
                 if not (u == 1):
