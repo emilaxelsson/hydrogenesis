@@ -188,11 +188,22 @@ Pattern = list[Row]
 
 
 @dataclass(frozen=True)
+class MPTMExtendedPattern:
+    rows_per_beat: int
+    rows_per_measure: int
+
+
+@dataclass(frozen=True)
+class MPTMExtensions:
+    pattern: list[MPTMExtendedPattern]
+
+
+@dataclass(frozen=True)
 class Track:
     header: ITHeader
     patterns: list[Pattern]
     mp_extensions: MPExtensions
-    mptm_extensions: Optional[dict[str, Any]]
+    mptm_extensions: Optional[MPTMExtensions]
 
 
 class Parser:
@@ -308,7 +319,9 @@ class Parser:
 
         self.f.seek(0xC0)
 
-        raw_orders_2 = list(struct.iter_unpack("<B", self.read_bytes(ordnum, "raw_orders")))
+        raw_orders_2 = list(
+            struct.iter_unpack("<B", self.read_bytes(ordnum, "raw_orders"))
+        )
         instrument_offsets_2 = list(
             struct.iter_unpack("<I", self.read_bytes(insnum * 4, "instrument_offsets"))
         )
@@ -319,7 +332,9 @@ class Parser:
             struct.iter_unpack("<I", self.read_bytes(patnum * 4, "pattern_offsets"))
         )
 
-        raw_orders: list[int] = [i[0] for i in raw_orders_2]  # Get first component of tuple
+        raw_orders: list[int] = [
+            i[0] for i in raw_orders_2
+        ]  # Get first component of tuple
         instrument_offsets: list[int] = [i[0] for i in instrument_offsets_2]
         sample_offsets: list[int] = [i[0] for i in sample_offsets_2]
         pattern_offsets: list[int] = [i[0] for i in pattern_offsets_2]
@@ -556,13 +571,14 @@ class Parser:
 
         return patterns
 
-    def parse_generic_mptm_chunk(self, expected_id: bytes, cont: Callable[[bytes, int, int], T]) -> T:
-        return self.sub(
-            f"parse_mptm_chunk('{expected_id.decode('ascii')}')",
-            lambda sub: sub._parse_generic_mptm_chunk(expected_id, cont),
-        )
+    def with_pos(self, pos: int, body: Callable[[], T]) -> T:
+        previous_pos = self.f.tell()
+        self.f.seek(pos)
+        result = body()
+        self.f.seek(previous_pos)
+        return result
 
-    def _parse_generic_mptm_chunk(self, expected_id: bytes, cont: Callable[[bytes, int, int], T]) -> T:
+    def parse_generic_mptm_chunk(self, expected_id: bytes) -> Tuple[int, int]:
         chunk_start = self.f.tell()
 
         x228 = self.read_bytes(3, "x228")
@@ -585,8 +601,8 @@ class Parser:
         if header_constants != b"\x1f\x08\x00\x01":
             raise ValueError(f"unexpected header constants: {str(header_constants)}")
 
-        # Numeric version number (exists because bit 4 of the header byte (1F) is set)
-        self.read_auint64()
+        # Exists because bit 4 of the header byte (1F) is set
+        self.read_auint64("numeric_version_number")
 
         custom_id_len = self.read_u8("custom_id_len")
         if not (custom_id_len & 0x01):
@@ -599,160 +615,76 @@ class Parser:
 
         self.f.seek(map_ptr)
 
-        return cont(chunk_id, chunk_start, num_entries)
+        return (chunk_start, num_entries)
 
-    def parse_mptm_map(
-        self,
-        parent_chunk_id: bytes,
-        chunk_start: int,
-        num_entries: int,
-    ) -> dict[str, Any]:
-        return self.sub(
-            f"parse_mptm_map({str(parent_chunk_id)}, {str(chunk_start)}, {str(num_entries)})",
-            lambda sub: sub._parse_mptm_map(parent_chunk_id, chunk_start, num_entries),
-        )
-
-    def _parse_mptm_map(
-        self,
-        parent_chunk_id: bytes,
-        chunk_start: int,
-        num_entries: int,
-    ) -> dict[str, Any]:
-        map: dict[str, Any] = {}
+    def parse_mptm_map(self, num_entries: int) -> dict[bytes, int]:
+        # Mapping from id to offset (relative to `chunk_start`)
+        entries: dict[bytes, int] = {}
 
         for i in range(0, num_entries):
             self.log(f"--- map entry {i}", self.f.tell())
             id_len = self.read_auint16("id_len")
             id = self.read_bytes(id_len, "id")
-            id_str = read_cstr(id)
             offset = self.read_auint64("offset")
-            entry_ptr = chunk_start + offset
             self.read_auint64("entry_size")
+            entries[id] = offset
 
-            pos = self.f.tell()
-            self.f.seek(entry_ptr)
+        return entries
 
-            if id == b"mptPc":  # Extended pattern collection
-                map[id_str] = self.parse_generic_mptm_chunk(id, self.parse_mptm_collection)
-            elif id == b"mptSeqC":
-                map[id_str] = self.parse_generic_mptm_chunk(id, self.parse_mptm_map)
-            elif id == b"n" and parent_chunk_id == b"mptSeqC":
-                n = self.read_u8("n")
-                map["num_seqs_in_file"] = n
-            elif id == b"c" and parent_chunk_id == b"mptSeqC":
-                c = self.read_u8("c")
-                map["default_seq"] = c
-            elif parent_chunk_id == b"mptSeqC":  # `id` varies (b'\x00', b'\x01', etc.)
-                self.log(f"sequence id: {str(id)}")
-                map[id_str] = self.parse_generic_mptm_chunk(b"mptSeq", self.parse_mptm_map)
-            elif id == b"u" and parent_chunk_id == b"mptSeq":
-                u = self.read_u8("u")
-                if not (u == 1):
-                    raise ValueError("sequence name encoding is not 1")
-            elif id == b"n" and parent_chunk_id == b"mptSeq":
-                self.log(f"id: {str(id)} -- skipping value at {hex(entry_ptr)}")
-            elif id == b"l" and parent_chunk_id == b"mptSeq":
-                l = self.read_u8("l")
-                map["seq_len"] = l
-            elif id == b"a" and parent_chunk_id == b"mptSeq":
-                # Assume that the above 'l' chunk has already been parsed
-                len: int = map["seq_len"]
-                orders = [0] * len
-                for i in range(0, len):
-                    orders[i] = self.read_u16(f"orders[{i}]")
-                map["orders"] = orders
-            elif id == b"t" and parent_chunk_id == b"mptSeq":
-                t = self.read_u32("t")
-                map["default_tempo"] = t
-            elif id == b"s" and parent_chunk_id == b"mptSeq":
-                s = self.read_u32("s")
-                map["default_ticks_per_row"] = s
-            elif id == b"data" and parent_chunk_id == b"mptP":
-                self.log("skipping data field in mptP chunk")
-            elif id == b"RPB." and parent_chunk_id == b"mptP":
-                rpb = self.read_u32("rpb")
-                map["rows_per_beat"] = rpb
-            elif id == b"RPM." and parent_chunk_id == b"mptP":
-                rpm = self.read_u32("rpm")
-                map["rows_per_measure"] = rpm
-            elif id == b"SWNG" and parent_chunk_id == b"mptP":
-                self.log("skipping SWNG field in mptP chunk")
-            else:
-                raise ValueError(
-                    f"unknown entry in chunk {str(parent_chunk_id)} -- id_str: {str(id)}"
-                )
+    def parse_mptP_chunk(self) -> MPTMExtendedPattern:
+        (chunk_start, num_entries) = self.parse_generic_mptm_chunk(b"mptP")
+        entries = self.parse_mptm_map(num_entries)
+        rpb_pos = entries[b"RPB."]
+        rpm_pos = entries[b"RPM."]
 
-            self.f.seek(pos)
+        rpb = self.with_pos(chunk_start + rpb_pos, lambda: self.read_u32("rpb"))
+        rpm = self.with_pos(chunk_start + rpm_pos, lambda: self.read_u32("rpm"))
 
-        return map
+        return MPTMExtendedPattern(rows_per_beat=rpb, rows_per_measure=rpm)
 
-    # Result should really be a `list[Any]`, but returning `dict[str, Any]` so that
-    # `parse_mptm_chunk` can have a uniform result type. The keys are going to be indices
-    # in string form, but one isn't supposed to do lookups on key in the resulting dict.
-    def parse_mptm_collection(
-        self,
-        parent_chunk_id: bytes,
-        chunk_start: int,
-        num_entries: int,
-    ) -> dict[int, Any]:
-        return self.sub(
-            f"parse_mptm_collection({str(parent_chunk_id)}, {str(chunk_start)}, {str(num_entries)})",
-            lambda sub: sub._parse_mptm_collection(
-                parent_chunk_id, chunk_start, num_entries
-            ),
+    def parse_mptPc_chunk(self) -> list[MPTMExtendedPattern]:
+        (chunk_start, num_entries) = self.parse_generic_mptm_chunk(b"mptPc")
+        entries = self.parse_mptm_map(num_entries)
+
+        seq = [
+            self.sub(
+                "parse_mptP_chunk",
+                lambda sub: sub.with_pos(chunk_start + pos, sub.parse_mptP_chunk),
+            )
+            for id, pos in entries.items()
+            if id != b"num"
+        ]
+        return seq
+
+    def parse_mptm_chunk(self) -> MPTMExtensions:
+        (chunk_start, num_entries) = self.parse_generic_mptm_chunk(b"mptm")
+        entries = self.parse_mptm_map(num_entries)
+
+        mptPc_pos = entries[b"mptPc"]
+        mptPc = self.sub(
+            "parse_mptPc_chunk",
+            lambda sub: sub.with_pos(chunk_start + mptPc_pos, sub.parse_mptPc_chunk),
         )
 
-    def _parse_mptm_collection(
-        self,
-        parent_chunk_id: bytes,
-        chunk_start: int,
-        num_entries: int,
-    ) -> dict[int, Any]:
-        collection: dict[int, Any] = {}
+        return MPTMExtensions(pattern=mptPc)
 
-        for i in range(0, num_entries):
-            self.log(f"--- collection entry {i}", self.f.tell())
-            id_len = self.read_auint16("id_len")
-            id = self.read_bytes(id_len, "id")
-            offset = self.read_auint64("offset")
-            entry_ptr = chunk_start + offset
-            self.log(f"entry_ptr: {hex(entry_ptr)}")
-            self.read_auint64("entry_size")
-
-            pos = self.f.tell()
-            self.f.seek(entry_ptr)
-
-            if parent_chunk_id == b"mptPc":
-                if id != b"num":
-                    entry = self.parse_generic_mptm_chunk(b"mptP", self.parse_mptm_map)
-                    collection[i] = entry
-                else:
-                    self.read_u16("num")
-            else:
-                raise ValueError(f"unknown entry id: {str(id)}")
-
-            self.f.seek(pos)
-
-        return collection
-
-    def parse_mptm_data(self) -> dict[str, Any]:
+    def parse_mptm_extensions(self) -> MPTMExtensions:
         # Pointer to the MPTM structure is found in the last four bytes of the file
         self.f.seek(-4, os.SEEK_END)
         mptm_pos = self.read_u32("mptm_pos")
         self.f.seek(mptm_pos)
-
-        return self.parse_generic_mptm_chunk(b"mptm", self.parse_mptm_map)
+        return self.sub("parse_mptm_chunk", lambda sub: sub.parse_mptm_chunk())
 
     def parse_track(self, mptm_extensions: bool) -> Track:
         (header, offsets) = self.parse_it_header()
         mp = self.parse_mp_extensions(offsets)
         patterns = self.parse_patterns(offsets.pattern_offsets)
         self.log()
-
-        if mptm_extensions:
-            mptm = self.parse_mptm_data()
-        else:
-            mptm = None
+        mptm = (
+            self.sub("parse_mptm_extensions", lambda sub: sub.parse_mptm_extensions())
+            if mptm_extensions
+            else None
+        )
 
         return Track(
             header=header,
