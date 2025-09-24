@@ -512,8 +512,8 @@ class Parser:
                 if mask_variable & 8:
                     comm = self.read_u8("comm")
                     val = self.read_u8("val")
-                    channel_comms[channel] = [comm, val]
-                    row.setdefault(channel, {})["comm"] = [comm, val]
+                    channel_comms[channel] = Command(comm, val)
+                    row.setdefault(channel, {})["comm"] = Command(comm, val)
                 if mask_variable & 16:
                     note = channel_notes[channel]
                     row.setdefault(channel, {})["note"] = note
