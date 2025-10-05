@@ -189,8 +189,8 @@ Pattern = list[Row]
 
 @dataclass(frozen=True)
 class MPTMExtendedPattern:
-    rows_per_beat: int
-    rows_per_measure: int
+    rows_per_beat: Optional[int]
+    rows_per_measure: Optional[int]
 
 
 @dataclass(frozen=True)
@@ -634,11 +634,18 @@ class Parser:
     def parse_mptP_chunk(self) -> MPTMExtendedPattern:
         (chunk_start, num_entries) = self.parse_generic_mptm_chunk(b"mptP")
         entries = self.parse_mptm_map(num_entries)
-        rpb_pos = entries[b"RPB."]
-        rpm_pos = entries[b"RPM."]
+        self.log_format(f"{entries}")
+        rpb_pos = entries.get(b"RPB.")
+        rpm_pos = entries.get(b"RPM.")
 
-        rpb = self.with_pos(chunk_start + rpb_pos, lambda: self.read_u32("rpb"))
-        rpm = self.with_pos(chunk_start + rpm_pos, lambda: self.read_u32("rpm"))
+        rpb = None
+        rpm = None
+
+        if isinstance(rpb_pos, int):
+            rpb = self.with_pos(chunk_start + rpb_pos, lambda: self.read_u32("rpb"))
+
+        if isinstance(rpm_pos, int):
+            rpm = self.with_pos(chunk_start + rpm_pos, lambda: self.read_u32("rpm"))
 
         return MPTMExtendedPattern(rows_per_beat=rpb, rows_per_measure=rpm)
 
