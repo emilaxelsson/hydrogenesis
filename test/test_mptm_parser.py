@@ -21,7 +21,7 @@ class TestMptmParser(unittest.TestCase):
     def test_can_parse_empty_it_module(self):
         with Path("test/empty.it").open("rb") as f:
             pa = Parser(f, SilentLogger())
-            track = pa.parse_track(mptm_extensions=False)
+            track = pa.parse_track()
 
             self.assertEqual(
                 track.header,
@@ -47,7 +47,7 @@ class TestMptmParser(unittest.TestCase):
         self.maxDiff = None
         with Path("test/test1.it").open("rb") as f:
             pa = Parser(f, SilentLogger())
-            track = pa.parse_track(mptm_extensions=False)
+            track = pa.parse_track()
 
             self.assertEqual(
                 track.header,
@@ -107,7 +107,7 @@ class TestMptmParser(unittest.TestCase):
         self.maxDiff = None
         with Path("test/test2.mptm").open("rb") as f:
             pa = Parser(f, SilentLogger())
-            track = pa.parse_track(mptm_extensions=True)
+            track = pa.parse_track()
 
             self.assertEqual(
                 track.header,

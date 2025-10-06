@@ -682,10 +682,14 @@ class Parser:
         self.f.seek(mptm_pos)
         return self.sub("parse_mptm_chunk", lambda sub: sub.parse_mptm_chunk())
 
-    def parse_track(self, mptm_extensions: bool) -> Track:
+    def parse_track(self) -> Track:
         (header, offsets) = self.parse_it_header()
         mp = self.parse_mp_extensions(offsets)
         patterns = self.parse_patterns(offsets.pattern_offsets)
+
+        # https://wiki.openmpt.org/Development:_OpenMPT_Format_Extensions#Detecting_an_MPTM_file
+        mptm_extensions = header.cwtv >= 0x889 and header.cwtv <= 0xFFF
+
         self.log()
         mptm = (
             self.sub("parse_mptm_extensions", lambda sub: sub.parse_mptm_extensions())
