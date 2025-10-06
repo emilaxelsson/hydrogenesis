@@ -121,7 +121,7 @@ class TestMptmParser(unittest.TestCase):
                     num_samples=1,
                     orders=[0, 0, 1],
                     ordnum=3,
-                    songname="Test1",
+                    songname="Test2",
                 ),
             )
 
