@@ -43,6 +43,31 @@ class TestMptmParser(unittest.TestCase):
             self.assertEqual(track.mptm_extensions, None)
             self.assertEqual(track.patterns, [empty_pattern])
 
+    def test_can_parse_empty_mptm_module(self):
+        with Path("test/empty.mptm").open("rb") as f:
+            pa = Parser(f, SilentLogger())
+            track = pa.parse_track()
+
+            self.assertEqual(
+                track.header,
+                ITHeader(
+                    cmwt=2184,
+                    cwtv=2193,
+                    initial_speed=6,
+                    initial_tempo=125,
+                    num_instruments=0,
+                    num_patterns=1,
+                    num_samples=1,
+                    orders=[0],
+                    ordnum=1,
+                    songname="",
+                ),
+            )
+
+            self.assertEqual(track.mp_extensions, MPExtensions(pattern_names=None))
+            self.assertEqual(track.mptm_extensions, MPTMExtensions(pattern=None))
+            self.assertEqual(track.patterns, [empty_pattern])
+
     def test_can_parse_test1(self):
         self.maxDiff = None
         with Path("test/test1.it").open("rb") as f:

@@ -195,7 +195,7 @@ class MPTMExtendedPattern:
 
 @dataclass(frozen=True)
 class MPTMExtensions:
-    pattern: list[MPTMExtendedPattern]
+    pattern: Optional[list[MPTMExtendedPattern]]
 
 
 @dataclass(frozen=True)
@@ -666,12 +666,17 @@ class Parser:
     def parse_mptm_chunk(self) -> MPTMExtensions:
         (chunk_start, num_entries) = self.parse_generic_mptm_chunk(b"mptm")
         entries = self.parse_mptm_map(num_entries)
+        mptPc_pos = entries.get(b"mptPc")
 
-        mptPc_pos = entries[b"mptPc"]
-        mptPc = self.sub(
-            "parse_mptPc_chunk",
-            lambda sub: sub.with_pos(chunk_start + mptPc_pos, sub.parse_mptPc_chunk),
-        )
+        if isinstance(mptPc_pos, int):
+            mptPc = self.sub(
+                "parse_mptPc_chunk",
+                lambda sub: sub.with_pos(
+                    chunk_start + mptPc_pos, sub.parse_mptPc_chunk
+                ),
+            )
+        else:
+            mptPc = None
 
         return MPTMExtensions(pattern=mptPc)
 
