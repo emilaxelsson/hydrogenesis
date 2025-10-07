@@ -107,7 +107,7 @@ class TestMptmParser(unittest.TestCase):
                             1: Cell(
                                 instrument=3,
                                 note=62,
-                                vol_pan=None,
+                                vol_pan=50,
                                 command=Command(20, 34),
                             ),
                             2: Cell(instrument=4, note=63, vol_pan=None, command=None),
@@ -115,7 +115,7 @@ class TestMptmParser(unittest.TestCase):
                         {},
                         {},
                         {},
-                        {1: Cell(instrument=5, note=74, vol_pan=None, command=None)},
+                        {1: Cell(instrument=5, note=74, vol_pan=148, command=None)},
                         {},
                         {},
                         {},

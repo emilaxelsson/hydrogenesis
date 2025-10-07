@@ -151,7 +151,7 @@ class ITHeader:
     cwtv: int
     cmwt: int
     initial_speed: int  # ticks per row
-    initial_tempo: int
+    initial_tempo: int  # beats per minute
     orders: list[int]
 
 
@@ -175,9 +175,9 @@ class Command:
 
 @dataclass(frozen=True)
 class Cell:
-    instrument: Optional[int]
-    note: Optional[int]
-    vol_pan: Optional[int]
+    instrument: Optional[int]  # 1-based index
+    note: Optional[int]  # 0-119 maps to C0 - B9
+    vol_pan: Optional[int]  # 0-64 maps to volume 0-64; 128-192 maps to panning 0-64
     command: Optional[Command]
 
 
