@@ -2,15 +2,15 @@ from pathlib import Path
 import unittest
 
 from logger import SilentLogger
-from mptm_parser import (
+from mptm_format import (
     Cell,
     Command,
     ITHeader,
     MPExtensions,
     MPTMExtendedPattern,
     MPTMExtensions,
-    Parser,
 )
+from mptm_parser import Parser
 
 
 # Note: Empty 64-row patterns have a special representation (offset pointer = 0)
