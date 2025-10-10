@@ -631,7 +631,7 @@ class Parser:
         else:
             mptPc = None
 
-        return MPTMExtensions(pattern=mptPc)
+        return MPTMExtensions(patterns=mptPc)
 
     def parse_mptm_extensions(self) -> MPTMExtensions:
         # Pointer to the MPTM structure is found in the last four bytes of the file

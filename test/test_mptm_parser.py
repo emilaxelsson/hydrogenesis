@@ -65,7 +65,7 @@ class TestMptmParser(unittest.TestCase):
             )
 
             self.assertEqual(track.mp_extensions, MPExtensions(pattern_names=None))
-            self.assertEqual(track.mptm_extensions, MPTMExtensions(pattern=None))
+            self.assertEqual(track.mptm_extensions, MPTMExtensions(patterns=None))
             self.assertEqual(track.patterns, [empty_pattern])
 
     def test_can_parse_test1(self):
@@ -154,7 +154,7 @@ class TestMptmParser(unittest.TestCase):
             self.assertEqual(
                 track.mptm_extensions,
                 MPTMExtensions(
-                    pattern=[
+                    patterns=[
                         MPTMExtendedPattern(rows_per_beat=2, rows_per_measure=16),
                         MPTMExtendedPattern(rows_per_beat=None, rows_per_measure=None),
                     ]

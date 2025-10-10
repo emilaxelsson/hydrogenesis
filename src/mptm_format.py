@@ -49,7 +49,7 @@ class MPTMExtendedPattern:
 
 @dataclass(frozen=True)
 class MPTMExtensions:
-    pattern: Optional[list[MPTMExtendedPattern]]
+    patterns: Optional[list[MPTMExtendedPattern]]
 
 
 @dataclass(frozen=True)
