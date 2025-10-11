@@ -1,27 +1,12 @@
-from collections import Counter
 from fractions import Fraction
-from typing import Optional, Tuple, TypeVar
+from typing import Optional, Tuple
 import hydrogen_format as hydrogen
 import mptm_format as mptm
+from utils import find_duplicates
 
 
 default_resolution = Fraction(4)
 hydrogen_ticks_per_beat = Fraction(48)
-
-
-T = TypeVar("T")
-
-
-# https://www.geeksforgeeks.org/python/how-to-find-duplicates-in-a-list-python/
-def find_duplicates(l: list[T]) -> list[T]:
-    """
-    >>> find_duplicates(["A", "B", "C"])
-    []
-    >>> find_duplicates(["A", "B", "A", "A", "C"])
-    ['A']
-    """
-    counts = Counter(l)
-    return [item for item, count in counts.items() if count > 1]
 
 
 def convert_volume(vol_pan: Optional[int]) -> float:
