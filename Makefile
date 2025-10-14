@@ -5,6 +5,6 @@ doctest:
 	python3 -m doctest src/*.py
 
 unit-tests:
-	PYTHONPATH=src python3 -m unittest discover -s test
+	PYTHONPATH=src pytest
 
 all-tests: doctest unit-tests
