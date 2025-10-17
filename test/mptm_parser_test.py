@@ -80,7 +80,7 @@ def test_can_parse_test1():
             songname="Test1",
         )
 
-        assert track.mp_extensions == MPExtensions(pattern_names=["Pattern 1"])
+        assert track.mp_extensions == MPExtensions(pattern_names=["Pattern 0"])
         assert track.mptm_extensions == None
 
         assert track.patterns == [
