@@ -1,5 +1,7 @@
 from pathlib import Path
+from typing import Optional, TypeVar
 from hypothesis import given, strategies as st
+from hypothesis.strategies import SearchStrategy
 import pytest
 
 from conversion import convert_key, convert_track, convert_volume
@@ -7,6 +9,14 @@ import hydrogen_format as hydrogen
 from logger import SilentLogger
 import mptm_format as mptm
 from mptm_parser import Parser
+
+
+T = TypeVar("T")
+
+
+# Selects `None` with a probability of 10%
+def optional(strategy: SearchStrategy[T]) -> SearchStrategy[Optional[T]]:
+    return st.one_of(st.none(), *([strategy] * 9))
 
 
 @given(st.integers(min_value=0))
@@ -107,3 +117,64 @@ def test_convert_file_test2():
         pa = Parser(f, SilentLogger())
         track = pa.parse_track()
         check_conversion(track)
+
+
+@st.composite
+def gen_header(draw: st.DrawFn) -> mptm.ITHeader:
+    title = draw(st.characters())
+    num_instruments = draw(st.integers())
+    num_samples = draw(st.integers())
+    num_patterns = draw(st.integers(min_value=0, max_value=10))
+    cwtv = draw(st.integers())
+    cmwt = draw(st.integers())
+    initial_speed = draw(st.integers())
+    initial_tempo = draw(st.integers())
+
+    if num_patterns == 0:
+        orders = []
+    else:
+        orders = draw(st.lists(st.integers(min_value=0, max_value=num_patterns - 1)))
+
+    return mptm.ITHeader(
+        songname=title,
+        ordnum=0,
+        num_instruments=num_instruments,
+        num_samples=num_samples,
+        num_patterns=num_patterns,
+        cwtv=cwtv,
+        cmwt=cmwt,
+        initial_speed=initial_speed,
+        initial_tempo=initial_tempo,
+        orders=orders,
+    )
+
+
+@st.composite
+def gen_track(draw: st.DrawFn) -> mptm.Track:
+    header = draw(gen_header())
+    patterns: list[mptm.Pattern] = draw(
+        # TODO
+        st.lists(
+            st.just([]), min_size=header.num_patterns, max_size=header.num_patterns
+        )
+    )
+    names = draw(st.lists(st.characters(), max_size=len(patterns)))
+    unique_names = list(set(names))
+    mp_extensions = mptm.MPExtensions(
+        pattern_names=draw(optional(st.just(unique_names)))
+    )
+
+    # TODO
+    mptm_extensions = draw(st.just(None))
+
+    return mptm.Track(
+        header=header,
+        patterns=patterns,
+        mp_extensions=mp_extensions,
+        mptm_extensions=mptm_extensions,
+    )
+
+
+@given(gen_track())
+def test_convert_track(track: mptm.Track):
+    check_conversion(track)
