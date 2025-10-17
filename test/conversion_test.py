@@ -10,10 +10,25 @@ from mptm_parser import Parser
 
 
 @given(st.integers(min_value=0))
-def test_convert_volume(vol_pan: int):
-    v = convert_volume(vol_pan)
-    assert v >= 0
-    assert v <= 1
+def test_convert_volume_range(vol_pan: int):
+    velocity = convert_volume(vol_pan)
+    assert velocity >= 0
+    assert velocity <= 1
+
+
+@given(st.integers(min_value=0))
+def test_convert_volume_monotonous(vol_pan: int):
+    vel = convert_volume(vol_pan)
+
+    if vol_pan > 0 and vol_pan < 64:
+        assert vel > convert_volume(vol_pan - 1)
+        assert vel < convert_volume(vol_pan + 1)
+
+    if vol_pan == 0:
+        assert vel == 0
+
+    if vol_pan >= 64:
+        assert vel == 1
 
 
 @given(st.integers(max_value=-1))
