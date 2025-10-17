@@ -13,7 +13,7 @@ class Note:
 @dataclass(frozen=True)
 class Pattern:
     size: int  # Number of ticks (= number of beats * 48)
-    name: str  # Probably must be unique (used as identifier in `BpmMarker`)
+    name: str  # Probably must be unique (used as identifier in `pattern_sequence`)
     notes: list[Note]
 
 
