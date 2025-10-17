@@ -132,11 +132,11 @@ def convert_track(track: mptm.Track) -> hydrogen.Song:
         for i, p in enumerate(track.patterns)
     ]
 
-    pattern_sequence = [get_pattern_name(o) for o in track.header.orders]
-    duplicate_names = find_duplicates(pattern_sequence)
+    duplicate_names = find_duplicates([p.name for p in patterns])
     if duplicate_names != []:
         raise ValueError(f"Duplicate pattern names: {duplicate_names}")
 
+    pattern_sequence = [get_pattern_name(o) for o in track.header.orders]
     bpm_timeline = [hydrogen.BpmMarker(bar=0, bpm=track.header.initial_tempo)]
 
     return hydrogen.Song(
