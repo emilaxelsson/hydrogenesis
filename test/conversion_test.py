@@ -71,7 +71,12 @@ def test_convert_key_out_of_range2(k: int):
 #   * Note conversion (mostly covered by tests above)
 def check_conversion(track: mptm.Track):
     def check_converted_pattern(mp_rows: mptm.Pattern, h2_patt: hydrogen.Pattern):
-        mp_notes = [n for row in mp_rows for n in row]
+        mp_notes = [
+            cell
+            for row in mp_rows
+            for _, cell in row.items()
+            if cell.note is not None and cell.instrument is not None
+        ]
         assert len(h2_patt.notes) == len(mp_notes)
 
     h2 = convert_track(track)
@@ -150,12 +155,39 @@ def gen_header(draw: st.DrawFn) -> mptm.ITHeader:
 
 
 @st.composite
+def gen_cell(draw: st.DrawFn) -> mptm.Cell:
+    instrument = draw(optional(st.integers()))
+    note = draw(optional(st.integers(min_value=0, max_value=119)))
+    vol_pan = draw(optional(st.integers(min_value=0)))
+    return mptm.Cell(
+        instrument=instrument,
+        note=note,
+        vol_pan=vol_pan,
+        command=None,
+    )
+
+
+@st.composite
+def gen_extended_pattern(draw: st.DrawFn) -> mptm.MPTMExtendedPattern:
+    rpb = draw(optional(st.integers(min_value=1)))
+    rpm = draw(optional(st.integers(min_value=1)))
+    return mptm.MPTMExtendedPattern(
+        rows_per_beat=rpb,
+        rows_per_measure=rpm,
+    )
+
+
+@st.composite
 def gen_track(draw: st.DrawFn) -> mptm.Track:
     header = draw(gen_header())
     patterns: list[mptm.Pattern] = draw(
-        # TODO
         st.lists(
-            st.just([]), min_size=header.num_patterns, max_size=header.num_patterns
+            st.lists(
+                st.dictionaries(keys=st.integers(), values=gen_cell(), max_size=5),
+                max_size=10,
+            ),
+            min_size=header.num_patterns,
+            max_size=header.num_patterns,
         )
     )
     names = draw(st.lists(st.characters(), max_size=len(patterns)))
@@ -163,9 +195,11 @@ def gen_track(draw: st.DrawFn) -> mptm.Track:
     mp_extensions = mptm.MPExtensions(
         pattern_names=draw(optional(st.just(unique_names)))
     )
-
-    # TODO
-    mptm_extensions = draw(st.just(None))
+    mptm_extensions = mptm.MPTMExtensions(
+        patterns=draw(
+            optional(st.lists(gen_extended_pattern(), max_size=len(patterns)))
+        )
+    )
 
     return mptm.Track(
         header=header,
