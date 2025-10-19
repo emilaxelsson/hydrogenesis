@@ -5,7 +5,7 @@ This guide explains how to set up [OpenMPT](https://openmpt.org) and [Hydrogen](
 
 
 Hydrogen
-==========================================================================================
+------------------------------------------------------------------------------------------
 
 Hydrogen will be used for playing notes sent from OpenMPT as MIDI events.
 
@@ -20,7 +20,7 @@ In principle, nothing else is needed on the Hydrogen side. However, it is advise
 
 
 OpenMPT
-==========================================================================================
+------------------------------------------------------------------------------------------
 
 Note for Linux users: OpenMPT can be run using the [Wine emulator](https://www.winehq.org). (This is the only set up I have tested myself.)
 
@@ -28,7 +28,7 @@ We will now set up an OpenMPT track from scratch in such a way that it can be us
 
 Start by creating a new track in OpenMPT. The default format, IT (Impulse Tracker), works fine. The [MPTM extensions](#mptm-extensions) section explains additional features offered by the MPTM format. However, the instrument set up is the same regardless of format.
 
-## Set up instruments
+### Set up instruments
 
 We will create one OpenMPT instrument for each instrument in the Hydrogen drum kit loaded [above](#hydrogen). The instruments should appear in the same order in OpenMPT and Hydrogen.
 
@@ -70,6 +70,6 @@ The remaining instruments can created by duplicating the first instrument as man
 
 ![](./images/mpt_duplicate_instr.png)
 
-## MPTM extensions
+### MPTM extensions
 
 TODO
