@@ -4,9 +4,9 @@
 
 # Hydrogenesis
 
-[Hydrogen](http://hydrogen-music.org/) is great for realistic drum track generation.
+[Hydrogen](http://hydrogen-music.org) is great for realistic drum track generation.
 
-[OpenMPT](https://openmpt.org/) has an efficient keyboard-friendly editing experience.
+[OpenMPT](https://openmpt.org) has an efficient keyboard-friendly editing experience.
 
 Did you ever wish you could combine the two? *Well, now you can!*
 
