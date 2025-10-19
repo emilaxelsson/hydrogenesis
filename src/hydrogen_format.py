@@ -4,6 +4,11 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class Note:
     position: int  # Tick position within bar (fractional beat position * 48)
+    # Finer granularity could be achieved using the `leadlag` property. It's a value in
+    # the range [-1, 1], where -1 means delay by 5 (Hydrogen) ticks and 1 means advance by
+    # 5 ticks. `leadlag` is a floating point value. Not sure how it's quantized, but at
+    # least the UI shows two decimal places.
+
     instrument: int  # 0-based index
     velocity: float  # Range: [0.0, 1.0]
     key: int  # Range: [0, 11], corresponding to C, C#, D ... B
