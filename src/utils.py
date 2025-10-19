@@ -14,3 +14,9 @@ def find_duplicates(l: list[T]) -> list[T]:
     """
     counts = Counter(l)
     return [item for item, count in counts.items() if count > 1]
+
+
+def require(val: T | None, what: str) -> T:
+    if val is None:
+        raise ValueError(f"missing {what}")
+    return val
