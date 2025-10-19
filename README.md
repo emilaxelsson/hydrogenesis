@@ -26,7 +26,7 @@ Rendering:
 
 *Q:* Why not stick to Hydrogen alone?
 
-*A:* Because Hydrogen is not well-suited for manual editing. It takes a lot of clicking in the UI to make just a few beats. Using the piano roll (e.g. for bass guitar) is especially cumbersome.
+*A:* Because Hydrogen is not ideal for manual editing of entire songs. It takes a lot of clicking in the UI to add beats and make changes. Using the piano roll (e.g. for bass guitar) is especially cumbersome.
 
 *Q:* Why not stick to OpenMPT alone?
 
