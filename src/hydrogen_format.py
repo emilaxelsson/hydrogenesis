@@ -4,7 +4,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class Note:
     position: int  # Tick position within bar (fractional beat position * 48)
-    instrument: int  # 1-based index
+    instrument: int  # 0-based index
     velocity: float  # Range: [0.0, 1.0]
     key: int  # Range: [0, 11], corresponding to C, C#, D ... B
     octave: int  # 0 is the "normal octave". Negative values are allowed.

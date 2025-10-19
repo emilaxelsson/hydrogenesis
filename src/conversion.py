@@ -75,7 +75,7 @@ def convert_note(beat: Fraction, cell: mptm.Cell) -> Optional[hydrogen.Note]:
 
     return hydrogen.Note(
         position=position,
-        instrument=cell.instrument,
+        instrument=cell.instrument - 1,
         velocity=velocity,
         key=key,
         octave=octave,
