@@ -1,10 +1,11 @@
+from fractions import Fraction
 from pathlib import Path
 from typing import Optional, TypeVar
-from hypothesis import given, strategies as st
+from hypothesis import assume, given, strategies as st
 from hypothesis.strategies import SearchStrategy
 import pytest
 
-from conversion import convert_key, convert_track, convert_volume
+from conversion import convert_key, convert_note, convert_track, convert_volume
 import hydrogen_format as hydrogen
 from logger import SilentLogger
 import mptm_format as mptm
@@ -64,6 +65,47 @@ def test_convert_key_out_of_range2(k: int):
     with pytest.raises(ValueError):
         convert_key(k)
 
+
+@st.composite
+def gen_cell(draw: st.DrawFn) -> mptm.Cell:
+    instrument = draw(optional(st.integers()))
+    note = draw(optional(st.integers(min_value=0, max_value=119)))
+    vol_pan = draw(optional(st.integers(min_value=0, max_value=255)))
+    return mptm.Cell(
+        instrument=instrument,
+        note=note,
+        vol_pan=vol_pan,
+        command=None,
+    )
+
+
+def note_to_cell(note: hydrogen.Note) -> mptm.Cell:
+    return mptm.Cell(
+        instrument=note.instrument + 1,
+        note=12 * note.octave + note.key,
+        vol_pan=round(note.velocity * 64.0),
+        command=None,
+    )
+
+@given(gen_cell())
+def test_cell_to_note_roundrip(cell: mptm.Cell):
+    vol_pan = cell.vol_pan
+    if cell.vol_pan is None or cell.vol_pan > 64:
+        vol_pan = 64
+
+    adjusted_cell = mptm.Cell(
+        instrument=cell.instrument,
+        note=cell.note,
+        vol_pan=vol_pan,
+        command=None,
+    )
+
+    note = convert_note(Fraction(0), adjusted_cell)
+
+    assume(note)
+    assert note
+
+    assert adjusted_cell == note_to_cell(note)
 
 # Focuses on structure. Does not check:
 #
@@ -151,19 +193,6 @@ def gen_header(draw: st.DrawFn) -> mptm.ITHeader:
         initial_speed=initial_speed,
         initial_tempo=initial_tempo,
         orders=orders,
-    )
-
-
-@st.composite
-def gen_cell(draw: st.DrawFn) -> mptm.Cell:
-    instrument = draw(optional(st.integers()))
-    note = draw(optional(st.integers(min_value=0, max_value=119)))
-    vol_pan = draw(optional(st.integers(min_value=0)))
-    return mptm.Cell(
-        instrument=instrument,
-        note=note,
-        vol_pan=vol_pan,
-        command=None,
     )
 
 
