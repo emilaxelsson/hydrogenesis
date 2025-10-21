@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -30,6 +31,9 @@ class BpmMarker:
 
 @dataclass(frozen=True)
 class Song:
+    name: Optional[str]
+    author: Optional[str]
+    bpm: int
     patterns: list[Pattern]
     pattern_sequence: list[str]  # Patterns referenced by name
     bpm_timeline: list[BpmMarker]

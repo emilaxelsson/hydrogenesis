@@ -140,9 +140,7 @@ def check_conversion(track: mptm.Track):
     h2_orders = [h2_pattern_positions[p] for p in h2.pattern_sequence]
 
     assert h2_orders == track.header.orders
-    assert h2.bpm_timeline == [
-        hydrogen.BpmMarker(bar=0, bpm=track.header.initial_tempo)
-    ]
+    assert h2.bpm_timeline == []
 
 
 def test_convert_file_empty():

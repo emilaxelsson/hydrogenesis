@@ -137,8 +137,13 @@ def convert_track(track: mptm.Track) -> hydrogen.Song:
         raise ValueError(f"Duplicate pattern names: {duplicate_names}")
 
     pattern_sequence = [get_pattern_name(o) for o in track.header.orders]
-    bpm_timeline = [hydrogen.BpmMarker(bar=0, bpm=track.header.initial_tempo)]
+    bpm_timeline: list[hydrogen.BpmMarker] = []
 
     return hydrogen.Song(
-        patterns=patterns, pattern_sequence=pattern_sequence, bpm_timeline=bpm_timeline
+        name=track.header.songname,
+        author="Automatically generated using Hydrogenesis",
+        bpm=track.header.initial_tempo,
+        patterns=patterns,
+        pattern_sequence=pattern_sequence,
+        bpm_timeline=bpm_timeline
     )

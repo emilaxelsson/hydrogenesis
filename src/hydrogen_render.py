@@ -30,6 +30,15 @@ def render_pattern(pattern: hydrogen.Pattern) -> Element:
 
 
 def graft(template: Element, song: hydrogen.Song) -> Element:
+    name_element = require(template.find("name"), "name tag")
+    name_element.text = song.name
+
+    author_element = require(template.find("author"), "author tag")
+    author_element.text = str(song.author)
+
+    bpm_element = require(template.find("bpm"), "bpm tag")
+    bpm_element.text = str(song.bpm)
+
     pattern_list = require(template.find("patternList"), "patternList tag")
 
     # Remove existing patterns from template
