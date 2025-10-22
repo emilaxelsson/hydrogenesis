@@ -1,5 +1,3 @@
-*Note: Hydrogenesis is not yet done, but this document describes the goal.*
-
 ![](./logo.png)
 
 # Hydrogenesis
@@ -35,15 +33,3 @@ Rendering:
 ## Examples
 
 See [this page](./doc/examples.md).
-
-## Bonus
-
-As an added bonus, Hydrogenesis supports *tempo changes at arbitrary points in the track*. Hydrogen only allows tempo changes between measures. Hydrogenesis achieves arbitrary-point tempo changes by simply breaking measures as needed when generating Hydrogen songs.
-
-## Parser
-
-The [MPTM parser](./src/mptm_parser.py) could potentially be of wider use than for the conversion in Hydrogenesis. It does not parse all parts of an MPTM file, but it does handle some things that [libopenmpt](https://lib.openmpt.org/libopenmpt/) doesn't (as of version 0.8.3), in particular:
-
-  * The "rows per beat" value, stored in patterns
-
-I have no plans on extending the parser beyond the need of Hydrogenesis, but I'd welcome pull requests if someone wants to extend it.

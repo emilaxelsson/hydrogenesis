@@ -69,7 +69,3 @@ To create the first instrument:
 The remaining instruments can created by duplicating the first instrument as many times as needed, and just updating the name and MIDI program number for each one.
 
 ![](./images/mpt_duplicate_instr.png)
-
-### MPTM extensions
-
-TODO
