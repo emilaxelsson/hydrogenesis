@@ -145,5 +145,5 @@ def convert_track(track: mptm.Track) -> hydrogen.Song:
         bpm=track.header.initial_tempo,
         patterns=patterns,
         pattern_sequence=pattern_sequence,
-        bpm_timeline=bpm_timeline
+        bpm_timeline=bpm_timeline,
     )

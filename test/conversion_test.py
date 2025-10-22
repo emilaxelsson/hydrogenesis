@@ -87,6 +87,7 @@ def note_to_cell(note: hydrogen.Note) -> mptm.Cell:
         command=None,
     )
 
+
 @given(gen_cell())
 def test_cell_to_note_roundrip(cell: mptm.Cell):
     vol_pan = cell.vol_pan
@@ -106,6 +107,7 @@ def test_cell_to_note_roundrip(cell: mptm.Cell):
     assert note
 
     assert adjusted_cell == note_to_cell(note)
+
 
 # Focuses on structure. Does not check:
 #
