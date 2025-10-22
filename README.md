@@ -32,6 +32,10 @@ Rendering:
 
 *A:* Because OpenMPT does not have realistic sound generation with velocities and randomly variating samples.
 
+## Examples
+
+See [this page](./doc/examples.md).
+
 ## Bonus
 
 As an added bonus, Hydrogenesis supports *tempo changes at arbitrary points in the track*. Hydrogen only allows tempo changes between measures. Hydrogenesis achieves arbitrary-point tempo changes by simply breaking measures as needed when generating Hydrogen songs.
