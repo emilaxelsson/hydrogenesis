@@ -1,40 +1,59 @@
+import argparse
 from pathlib import Path
-import pprint
-import sys
+from xml.dom import minidom
+import xml.etree.ElementTree as xml
+from xml.etree.ElementTree import Element
 
+from conversion import convert_track
 from logger import Logger, SilentLogger
 from mptm_parser import Parser
+from hydrogen_render import graft
+from utils import require
 
 
-def main(path: str, debug: bool):
+def main(track_path: str, template_path: str, output_path: str, debug: bool):
     if debug:
         logger = Logger()
     else:
         logger = SilentLogger()
 
-    p = Path(path)
-    with p.open("rb") as f:
+    with Path(track_path).open("rb") as f:
         pa = Parser(f, logger)
-        parsed_track = pa.parse_track()
+        track = pa.parse_track()
 
-    pprint.pprint(parsed_track)
+    h2song = convert_track(track)
+
+    template_tree = xml.parse(template_path)
+    template: Element = require(template_tree.getroot(), "template root element")
+
+    rendered_song = graft(template, h2song)
+
+    song_xml = xml.tostring(rendered_song)
+    song_xml_str = minidom.parseString(song_xml).toprettyxml(indent="  ")
+
+    # https://stackoverflow.com/questions/1662351/problem-with-newlines-when-i-use-toprettyxml#comment136233222_39984422
+    song_xml_str = "\n".join([s for s in song_xml_str.splitlines() if s.strip()])
+
+    with open(output_path, "w") as f:
+        f.write(song_xml_str)
 
 
 if __name__ == "__main__":
-    usage = "Usage: python3 hydrogenesis.py [--debug] file.mptm"
+    parser = argparse.ArgumentParser(
+        description="Convert OpenMPT tracks (.it/.mptm) to Hydrogen format (.h2song)."
+    )
+    parser.add_argument("input_file", help="Path to the input track")
+    parser.add_argument("-t", "--template", help="Path to the template .h2song file")
+    parser.add_argument("-o", "--output", help="Path to the output .h2song file")
+    parser.add_argument(
+        "--debug", action="store_true", help="Enable debug mode for verbose output"
+    )
 
-    if len(sys.argv) < 2:
-        print(usage)
-        sys.exit(1)
+    args = parser.parse_args()
 
-    debug = False
-    args = sys.argv[1:]
-    if "--debug" in args:
-        debug = True
-        args.remove("--debug")
-
-    if not args:
-        print(f"Error: missing input file.\n{usage}")
-        sys.exit(1)
-
-    main(args[0], debug=debug)
+    main(
+        track_path=args.input_file,
+        template_path=args.template,
+        output_path=args.output,
+        debug=args.debug,
+    )
