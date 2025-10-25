@@ -46,7 +46,7 @@ To create the first instrument:
 
       - The plugin manager window opens. Select "MIDI Input Output" and click "Put in FX01".
 
-        ![](./images/plugin_manager_midi.png)
+        ![](./images/mpt_plugin_manager_midi.png)
 
       - Click "Editor"
 
