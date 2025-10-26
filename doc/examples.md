@@ -4,7 +4,7 @@ The [examples](../examples/) folder contains an example track and a Hydrogen tem
 
 ## Playback
 
-First open up Hydrogen and load the template [GMRockKit_template.h2song](../examples/GMRockKit_template.h2song). The template does not contain any beats, but it ensures that the appropriate drum kit is loaded.
+First, open up Hydrogen and load the template [GMRockKit_template.h2song](../examples/GMRockKit_template.h2song). The template does not contain any beats, but it ensures that the appropriate drum kit is loaded.
 
 Next, open the track [Were_not_gonna_take_it.it](../examples/Were_not_gonna_take_it.it) in OpenMPT.
 
@@ -35,4 +35,4 @@ However, there is nothing special about the template. It is mainly provided here
 python3 src/hydrogenesis.py --template out.h2song --output out.h2song examples/Were_not_gonna_take_it.it
 ```
 
-The template is only read by Hydrogenesis, not written. However, when using the same file as both template and output (as above), then the converter will first read the file and then overwrite it.
+The template is only read by Hydrogenesis, not written. However, when using the same file as both template and output (as above), then the converter will first read the file and then overwrite it. This is not a problem; the new file is equivalent to the old file when viewed as a template.
