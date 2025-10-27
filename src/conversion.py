@@ -2,7 +2,7 @@ from fractions import Fraction
 from typing import Optional, Tuple
 import hydrogen_format as hydrogen
 import mptm_format as mptm
-from utils import find_duplicates
+from utils import uniquify_names
 
 
 default_resolution = Fraction(4)
@@ -91,16 +91,18 @@ def convertRow(resolution: Fraction, index: int, row: mptm.Row) -> list[hydrogen
 
 
 def convert_track(track: mptm.Track) -> hydrogen.Song:
-    def get_pattern_name(index: int) -> str:
-        # Good chance of being a unique name
-        default_name = f"Pattern {index}"
+    track_pattern_names = track.mp_extensions.pattern_names or []
+    extended_track_pattern_names = [
+        (
+            name
+            if index < len(track_pattern_names) and (name := track_pattern_names[index])
+            else f"Pattern {index}"
+        )
+        for index in range(0, len(track.patterns))
+    ]
 
-        names = track.mp_extensions.pattern_names
-
-        if names is None:
-            return default_name
-
-        return names[index] if index < len(names) else default_name
+    # List of unique names. Same length as `track.patterns`.
+    unique_pattern_names = uniquify_names(extended_track_pattern_names)
 
     def get_pattern_resolution(index: int) -> Fraction:
         if track.mptm_extensions is None:
@@ -128,15 +130,11 @@ def convert_track(track: mptm.Track) -> hydrogen.Song:
         return hydrogen.Pattern(name=name, size=size, notes=notes)
 
     patterns = [
-        convert_pattern(get_pattern_name(i), get_pattern_resolution(i), p)
+        convert_pattern(unique_pattern_names[i], get_pattern_resolution(i), p)
         for i, p in enumerate(track.patterns)
     ]
 
-    duplicate_names = find_duplicates([p.name for p in patterns])
-    if duplicate_names != []:
-        raise ValueError(f"Duplicate pattern names: {duplicate_names}")
-
-    pattern_sequence = [get_pattern_name(o) for o in track.header.orders]
+    pattern_sequence = [unique_pattern_names[o] for o in track.header.orders]
     bpm_timeline: list[hydrogen.BpmMarker] = []
 
     return hydrogen.Song(

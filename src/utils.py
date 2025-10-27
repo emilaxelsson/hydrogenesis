@@ -1,19 +1,27 @@
-from collections import Counter
 from typing import TypeVar
 
 T = TypeVar("T")
 
 
-# https://www.geeksforgeeks.org/python/how-to-find-duplicates-in-a-list-python/
-def find_duplicates(l: list[T]) -> list[T]:
-    """
-    >>> find_duplicates(["A", "B", "C"])
-    []
-    >>> find_duplicates(["A", "B", "A", "A", "C"])
-    ['A']
-    """
-    counts = Counter(l)
-    return [item for item, count in counts.items() if count > 1]
+def uniquify_names(names: list[str]) -> list[str]:
+    """Return a new list of items with unique names by renaming duplicates."""
+    seen: set[str] = set()
+    result: list[str] = []
+
+    for name in names:
+        base_name = name
+        new_name = base_name
+        i = 1
+
+        while new_name in seen:
+            # if new_name == base_name
+            new_name = f"{base_name}{i}"
+            i += 1
+
+        seen.add(new_name)
+        result.append(new_name)
+
+    return result
 
 
 def require(val: T | None, what: str) -> T:
