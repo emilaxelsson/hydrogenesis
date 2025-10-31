@@ -12,7 +12,7 @@ Did you ever wish you could combine the two? *Well, now you can!*
 
 Editing:
 
-  * Set up Hydrogen as a MIDI back end for OpenMPT (see [this guide](./doc/playback_setup.md))
+  * Set up Hydrogen as a MIDI back end for OpenMPT (see [this guide](./doc/setup.md))
   * Enjoy real-time Hydrogen playback while editing in OpenMPT
 
 Rendering:

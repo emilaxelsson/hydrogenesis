@@ -13,7 +13,7 @@ Start by opening up Hydrogen's MIDI settings and check that a suitable input por
 
 ![](./images/h2_midi_settings.png)
 
-Next, create a new song and loading a drum kit. Adjust mixer settings as needed.
+Next, create a new song and load a drum kit. Adjust mixer settings as needed.
 
 In principle, nothing else is needed on the Hydrogen side. However, it is advised to save the song after setting up the drumkit. The resulting `.h2song` file can be used as a template by the [Hydrogenesis](../src/hydrogenesis.py) converter.
 
@@ -22,7 +22,7 @@ In principle, nothing else is needed on the Hydrogen side. However, it is advise
 OpenMPT
 ------------------------------------------------------------------------------------------
 
-Note for Linux users: OpenMPT can be run using the [Wine emulator](https://www.winehq.org). (This is the only set up I have tested myself.)
+Note for Linux users: OpenMPT can be run using the [Wine emulator](https://www.winehq.org). (This is the only setup I have tested myself.)
 
 We will now set up an OpenMPT track from scratch in such a way that it can be used to drive Hydrogen for playback as well as being converted to a Hydrogen song using [Hydrogenesis](../src/hydrogenesis.py).
 
