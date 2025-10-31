@@ -8,19 +8,25 @@
 
 Did you ever wish you could combine the two? *Well, now you can!*
 
-## Basic idea
+
+
+Basic idea
+------------------------------------------------------------------------------------------
 
 Editing:
 
-  * Set up Hydrogen as a MIDI back end for OpenMPT (see [this guide](./doc/setup.md))
-  * Enjoy real-time Hydrogen playback while editing in OpenMPT
+  * Set up Hydrogen as a MIDI back end for OpenMPT (see [this guide](./doc/setup_track.md))
+  * Enjoy real-time Hydrogen [playback](./doc/playback.md) while editing in OpenMPT
 
 Rendering:
 
-  * Once done with editing, use [hydrogenesis.py](./src/hydrogenesis.py) to convert the track to a Hydrogen song
+  * Once done with editing, Hydrogenesis to [convert](./doc/conversion.md) the track to a Hydrogen song
   * Use Hydrogen to generate a sound file
 
-## But why?
+
+
+But why?
+------------------------------------------------------------------------------------------
 
 *Q:* Why not stick to Hydrogen alone?
 
@@ -30,6 +36,17 @@ Rendering:
 
 *A:* Because OpenMPT does not have realistic sound generation with velocities and randomly variating samples.
 
-## Examples
 
-See [this page](./doc/examples.md).
+
+User guide
+------------------------------------------------------------------------------------------
+
+Getting started:
+
+  * [Playback](./doc/playback.md)
+  * [Conversion](./doc/conversion.md)
+
+Topics:
+
+  * [Set up track from scratch](./doc/setup_track.md)
+  * [OpenMPT on Linux](./doc/linux.md)

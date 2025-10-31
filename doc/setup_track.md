@@ -1,4 +1,4 @@
-# Playback
+# Set up track from scratch
 
 This guide explains how to set up [OpenMPT](https://openmpt.org) and [Hydrogen](http://hydrogen-music.org) for live playback.
 
@@ -22,9 +22,7 @@ In principle, nothing else is needed on the Hydrogen side. However, it is advise
 OpenMPT
 ------------------------------------------------------------------------------------------
 
-Note for Linux users: OpenMPT can be run using the [Wine emulator](https://www.winehq.org). (This is the only setup I have tested myself.)
-
-We will now set up an OpenMPT track from scratch in such a way that it can be used to drive Hydrogen for playback as well as being converted to a Hydrogen song using [Hydrogenesis](../src/hydrogenesis.py).
+We will now set up an OpenMPT track from scratch in such a way that it can be used to drive Hydrogen for playback as well as being [converted](./conversion.md) to a Hydrogen song using [Hydrogenesis](../src/hydrogenesis.py).
 
 Start by creating a new track in OpenMPT. The default format, IT (Impulse Tracker), works fine. The [MPTM extensions](#mptm-extensions) section explains additional features offered by the MPTM format. However, the instrument set up is the same regardless of format.
 
