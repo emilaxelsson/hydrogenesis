@@ -29,3 +29,5 @@ The MPTM format has an extension that allows overriding the default number of *r
 Hydrogenesis will always respect RPB for MPTM tracks. However, OpenMPT itself only caters for RPB when the track's tempo mode is set to "Modern (accurate)". Hence, modern tempo mode must be used in order to get consistent playback and conversion when patterns override the default RPB.
 
 The [Tempo mode](./setup_track.md#tempo-mode) section explains how to set modern tempo mode.
+
+The example track [Were_not_gonna_take_it.mptm](../examples/Were_not_gonna_take_it.mptm) demonstrates the use of pattern-specific RPB. (Compare to [Were_not_gonna_take_it.it](../examples/Were_not_gonna_take_it.it) which does not use custom RPB.)
