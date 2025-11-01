@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from fractions import Fraction
 from typing import Optional, Tuple
 import hydrogen_format as hydrogen
@@ -88,6 +89,55 @@ def convertRow(resolution: Fraction, index: int, row: mptm.Row) -> list[hydrogen
         for _, cell in row.items()
         if (note := convert_note(Fraction(index) / resolution, cell)) is not None
     ]
+
+
+def get_tempo_change(row: mptm.Row) -> Optional[int]:
+    tempo_change: Optional[int] = None
+
+    cells_left_to_right = [row[ch] for ch in sorted(row.keys())]
+
+    # The last (i.e. right-most) tempo change wins in case of conflicting commands
+    for cell in cells_left_to_right:
+        if cell.command and cell.command.c1 == 20:
+            tempo_change = cell.command.c2
+
+    return tempo_change
+
+
+BPM = int
+
+
+@dataclass(frozen=True)
+class TempoSlicedPattern:
+    """
+    A pattern divided into sub-patterns (slices) with different tempos. A slice may only
+    have a tempo change on its first row. The `BPM` value paired with each slice should
+    have the same value as the tempo change on the first row (if any).
+    """
+
+    slices: list[Tuple[Optional[BPM], mptm.Pattern]]
+
+
+def slice_pattern(pattern: mptm.Pattern) -> TempoSlicedPattern:
+    """
+    Split a pattern into a sliced pattern. Concatenating the slices gives back the
+    original pattern.
+    """
+    slices: list[Tuple[Optional[BPM], mptm.Pattern]] = []
+    slice: mptm.Pattern = []
+
+    for row in pattern:
+        tempo_change = get_tempo_change(row)
+
+        if tempo_change is None:
+            slice.append(row)
+        else:
+            slices.append((tempo_change, slice))
+            slice = [row]
+
+    slices.append((None, slice))
+
+    return TempoSlicedPattern(slices)
 
 
 def convert_track(track: mptm.Track) -> hydrogen.Song:

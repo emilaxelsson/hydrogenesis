@@ -5,7 +5,13 @@ from hypothesis import assume, given, strategies as st
 from hypothesis.strategies import SearchStrategy
 import pytest
 
-from conversion import convert_key, convert_note, convert_track, convert_volume
+from conversion import (
+    convert_key,
+    convert_note,
+    convert_track,
+    convert_volume,
+    slice_pattern,
+)
 import hydrogen_format as hydrogen
 from logger import SilentLogger
 import mptm_format as mptm
@@ -243,6 +249,13 @@ def gen_track(draw: st.DrawFn) -> mptm.Track:
         mp_extensions=mp_extensions,
         mptm_extensions=mptm_extensions,
     )
+
+
+@given(gen_pattern())
+def test_slice_pattern_concat(pattern: mptm.Pattern):
+    sliced_pat = slice_pattern(pattern)
+    pattern2 = [row for _, slice in sliced_pat.slices for row in slice]
+    assert pattern2 == pattern
 
 
 @given(gen_track())
