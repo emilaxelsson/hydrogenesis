@@ -197,6 +197,16 @@ def gen_header(draw: st.DrawFn) -> mptm.ITHeader:
 
 
 @st.composite
+def gen_pattern(draw: st.DrawFn) -> mptm.Pattern:
+    return draw(
+        st.lists(
+            st.dictionaries(keys=st.integers(), values=gen_cell(), max_size=5),
+            max_size=10,
+        )
+    )
+
+
+@st.composite
 def gen_extended_pattern(draw: st.DrawFn) -> mptm.MPTMExtendedPattern:
     rpb = draw(optional(st.integers(min_value=1)))
     rpm = draw(optional(st.integers(min_value=1)))
@@ -211,10 +221,7 @@ def gen_track(draw: st.DrawFn) -> mptm.Track:
     header = draw(gen_header())
     patterns: list[mptm.Pattern] = draw(
         st.lists(
-            st.lists(
-                st.dictionaries(keys=st.integers(), values=gen_cell(), max_size=5),
-                max_size=10,
-            ),
+            gen_pattern(),
             min_size=header.num_patterns,
             max_size=header.num_patterns,
         )
