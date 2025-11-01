@@ -31,3 +31,7 @@ Hydrogenesis will always respect RPB for MPTM tracks. However, OpenMPT itself on
 The [Tempo mode](./setup_track.md#tempo-mode) section explains how to set modern tempo mode.
 
 The example track [Were_not_gonna_take_it.mptm](../examples/Were_not_gonna_take_it.mptm) demonstrates the use of pattern-specific RPB. (Compare to [Were_not_gonna_take_it.it](../examples/Were_not_gonna_take_it.it) which does not use custom RPB.)
+
+### Track-wide rows per beat
+
+The parser cannot read the track-wide rows per beat value (the value that is set in Song Properties on the General tab). I wasn't able to figure out how to parse this value (available information doesn't match what I see in example files). The converter will assume 4 rows per beat unless this value is overridden in individual patterns.
