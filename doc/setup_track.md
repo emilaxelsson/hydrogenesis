@@ -67,3 +67,18 @@ To create the first instrument:
 The remaining instruments can created by duplicating the first instrument as many times as needed, and just updating the name and MIDI program number for each one.
 
 ![](./images/mpt_duplicate_instr.png)
+
+### Tempo mode
+
+The MPTM format supports overriding the [rows per beat](./features.md#rows-per-beat) value for individual patterns. However, this feature only has effect if the track's tempo mode is set to "Modern (accurate)".
+
+To select modern tempo mode, go to the General tab and click the field that shows the track format (e.g. "IT (Impulse Tracker)" or "MPTM (OpenMPT)").
+
+![](./images/mpt_general_song_properties.png)
+
+In the Song Properties dialog:
+
+  * Ensure that track type is set to "OpenMPT MPTM"
+  * Set Tempo Mode to "Modern (accurate)"
+
+![](./images/mpt_song_properties.png)

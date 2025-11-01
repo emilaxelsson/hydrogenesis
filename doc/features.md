@@ -10,7 +10,7 @@ What gets converted?
       - notes (key, instrument, volume)
   * Orders (pattern sequences)
   * MPTM extensions:
-      - Rows per beat
+      - [Rows per beat](#rows-per-beat)
 
 What does not get converted?
 
@@ -24,6 +24,8 @@ What does not get converted?
 Rows per beat
 ------------------------------------------------------------------------------------------
 
-The MPTM format has an extension that allows overriding default number of *rows per beat* for individual patterns. This is a really nice feature that provides a kind of dynamic resolution. Patterns with a lot of action can use e.g. 4 rows per beat (meaning each row is separated by a 16th note) while other patterns can make do with fewer rows per beat. Using a lower number where possible makes navigation and editing easier.
+The MPTM format has an extension that allows overriding the default number of *rows per beat* (RPB) for individual patterns. This is a really nice feature that provides a kind of dynamic resolution. Patterns with a lot of action can use e.g. 4 rows per beat (meaning each row is separated by a 16th note) while other patterns can make do with a lower RPB. Using a lower number where possible makes navigation and editing easier.
 
-Hydrogenesis will always respect rows per beat for MPTM tracks. However, OpenMPT itself only caters for *rows per beat* when the track's tempo mode is set to "Modern (accurate)".
+Hydrogenesis will always respect RPB for MPTM tracks. However, OpenMPT itself only caters for RPB when the track's tempo mode is set to "Modern (accurate)". Hence, modern tempo mode must be used in order to get consistent playback and conversion when patterns override the default RPB.
+
+The [Tempo mode](./setup_track.md#tempo-mode) section explains how to set modern tempo mode.
