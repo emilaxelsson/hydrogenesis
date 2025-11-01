@@ -50,4 +50,5 @@ Topics:
 
   * [Features and limitations](./doc/features.md)
   * [Set up track from scratch](./doc/setup_track.md)
+  * [Parser](./doc/parser.md)
   * [OpenMPT on Linux](./doc/linux.md)
