@@ -1,6 +1,7 @@
+from typing import Tuple
 from hypothesis import assume, given, strategies as st
 
-from utils import uniquify_names
+from utils import uniquify_names, unzip
 
 
 @st.composite
@@ -69,3 +70,9 @@ def test_uniquify_names_example3():
         "Apa2",
     ]
     assert uniquify_names(names) == ["Apa2", "Bepa", "Apa21", "Apa22"]
+
+
+@given(st.lists(st.tuples(st.integers(), st.text())))
+def test_unzip(pairs: list[Tuple[int, str]]):
+    ts, us = unzip(pairs)
+    assert list(zip(ts, us)) == pairs
