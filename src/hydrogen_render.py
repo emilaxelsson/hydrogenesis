@@ -4,6 +4,22 @@ import hydrogen_format as hydrogen
 from utils import require
 
 
+note_keys = [
+    "C",
+    "Cs",
+    "D",
+    "Ef",
+    "E",
+    "F",
+    "Fs",
+    "G",
+    "Af",
+    "A",
+    "Bf",
+    "B",
+]
+
+
 def render_pattern(pattern: hydrogen.Pattern) -> Element:
     pattern_elem = Element("pattern")
 
@@ -25,6 +41,9 @@ def render_pattern(pattern: hydrogen.Pattern) -> Element:
 
         instrument = SubElement(note_elem, "instrument")
         instrument.text = str(note.instrument)
+
+        key = SubElement(note_elem, "key")
+        key.text = note_keys[note.key] + str(note.octave)
 
     return pattern_elem
 

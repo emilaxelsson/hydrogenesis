@@ -57,7 +57,7 @@ def test_convert_volume_negative(vol_pan: int):
 @given(st.integers(min_value=0, max_value=119))
 def test_convert_key(k: int):
     (key, octave) = convert_key(k)
-    assert k == 12 * octave + key
+    assert k == 12 * (octave + 3) + key
 
 
 @given(st.integers(max_value=-1))
@@ -88,7 +88,7 @@ def gen_cell(draw: st.DrawFn) -> mptm.Cell:
 def note_to_cell(note: hydrogen.Note) -> mptm.Cell:
     return mptm.Cell(
         instrument=note.instrument + 1,
-        note=12 * note.octave + note.key,
+        note=12 * (note.octave + 3) + note.key,
         vol_pan=round(note.velocity * 64.0),
         command=None,
     )

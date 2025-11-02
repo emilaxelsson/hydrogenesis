@@ -41,17 +41,17 @@ def convert_volume(vol_pan: Optional[int]) -> float:
 def convert_key(note: int) -> Tuple[int, int]:
     """
     >>> convert_key(0)
-    (0, 0)
+    (0, -3)
     >>> convert_key(1)
-    (1, 0)
+    (1, -3)
     >>> convert_key(11)
-    (11, 0)
+    (11, -3)
     >>> convert_key(12)
-    (0, 1)
+    (0, -2)
     >>> convert_key(36)
-    (0, 3)
+    (0, 0)
     >>> convert_key(119)
-    (11, 9)
+    (11, 6)
     """
 
     if note < 0 or note > 119:
@@ -60,7 +60,9 @@ def convert_key(note: int) -> Tuple[int, int]:
     key = note % 12
     octave = note // 12
 
-    return (key, octave)
+    # Hydrogen interprets MIDI key C3 as the "normal" pitch (no pitch shift). However, the
+    # `.h2song` format uses C0 as the normal pitch, so we need to subtract 3.
+    return (key, octave - 3)
 
 
 def convert_note(beat: Fraction, cell: mptm.Cell) -> Optional[hydrogen.Note]:
