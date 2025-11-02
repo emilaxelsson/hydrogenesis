@@ -43,8 +43,8 @@ if __name__ == "__main__":
         description="Convert OpenMPT tracks (.it/.mptm) to Hydrogen format (.h2song)."
     )
     parser.add_argument("input_file", help="Path to the input track")
-    parser.add_argument("-t", "--template", help="Path to the template .h2song file")
-    parser.add_argument("-o", "--output", help="Path to the output .h2song file")
+    parser.add_argument("-t", "--template", help="Path to the template .h2song file", required=True)
+    parser.add_argument("-o", "--output", help="Path to the output .h2song file", required=True)
     parser.add_argument(
         "--debug", action="store_true", help="Enable debug mode for verbose output"
     )
