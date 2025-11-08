@@ -20,7 +20,7 @@ Editing:
 
 Rendering:
 
-  * Once done with editing, Hydrogenesis to [convert](./doc/conversion.md) the track to a Hydrogen song
+  * Once done with editing, use [Hydrogenesis](./src/hydrogenesis.py) to [convert](./doc/conversion.md) the track to a Hydrogen song
   * Use Hydrogen to generate a sound file
 
 
