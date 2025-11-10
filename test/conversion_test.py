@@ -73,15 +73,27 @@ def test_convert_key_out_of_range2(k: int):
 
 
 @st.composite
+def gen_command(draw: st.DrawFn) -> mptm.Command:
+    # c1=20 is a tempo change
+    c1 = draw(st.integers(min_value=15, max_value=25))
+    c2 = draw(st.integers(min_value=0, max_value=255))
+    return mptm.Command(
+        c1=c1,
+        c2=c2,
+    )
+
+
+@st.composite
 def gen_cell(draw: st.DrawFn) -> mptm.Cell:
     instrument = draw(optional(st.integers()))
     note = draw(optional(st.integers(min_value=0, max_value=119)))
     vol_pan = draw(optional(st.integers(min_value=0, max_value=255)))
+    command = draw(optional(gen_command()))
     return mptm.Cell(
         instrument=instrument,
         note=note,
         vol_pan=vol_pan,
-        command=None,
+        command=command,
     )
 
 
