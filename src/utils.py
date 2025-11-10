@@ -1,6 +1,7 @@
-from typing import TypeVar
+from typing import Tuple, TypeVar
 
 T = TypeVar("T")
+U = TypeVar("U")
 
 
 def uniquify_names(names: list[str]) -> list[str]:
@@ -28,3 +29,14 @@ def require(val: T | None, what: str) -> T:
     if val is None:
         raise ValueError(f"missing {what}")
     return val
+
+
+def unzip(pairs: list[Tuple[T, U]]) -> Tuple[list[T], list[U]]:
+    ts: list[T] = []
+    us: list[U] = []
+
+    for (t, u) in pairs:
+        ts.append(t)
+        us.append(u)
+
+    return (ts, us)

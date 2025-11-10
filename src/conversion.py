@@ -1,8 +1,9 @@
+from dataclasses import dataclass
 from fractions import Fraction
 from typing import Optional, Tuple
 import hydrogen_format as hydrogen
 import mptm_format as mptm
-from utils import uniquify_names
+from utils import uniquify_names, unzip
 
 
 default_resolution = Fraction(4)
@@ -40,17 +41,17 @@ def convert_volume(vol_pan: Optional[int]) -> float:
 def convert_key(note: int) -> Tuple[int, int]:
     """
     >>> convert_key(0)
-    (0, 0)
+    (0, -3)
     >>> convert_key(1)
-    (1, 0)
+    (1, -3)
     >>> convert_key(11)
-    (11, 0)
+    (11, -3)
     >>> convert_key(12)
-    (0, 1)
+    (0, -2)
     >>> convert_key(36)
-    (0, 3)
+    (0, 0)
     >>> convert_key(119)
-    (11, 9)
+    (11, 6)
     """
 
     if note < 0 or note > 119:
@@ -59,7 +60,9 @@ def convert_key(note: int) -> Tuple[int, int]:
     key = note % 12
     octave = note // 12
 
-    return (key, octave)
+    # Hydrogen interprets MIDI key C3 as the "normal" pitch (no pitch shift). However, the
+    # `.h2song` format uses C0 as the normal pitch, so we need to subtract 3.
+    return (key, octave - 3)
 
 
 def convert_note(beat: Fraction, cell: mptm.Cell) -> Optional[hydrogen.Note]:
@@ -90,6 +93,58 @@ def convertRow(resolution: Fraction, index: int, row: mptm.Row) -> list[hydrogen
     ]
 
 
+def get_tempo_change(row: mptm.Row) -> Optional[int]:
+    tempo_change: Optional[int] = None
+
+    cells_left_to_right = [row[ch] for ch in sorted(row.keys())]
+
+    # The last (i.e. right-most) tempo change wins in case of conflicting commands
+    for cell in cells_left_to_right:
+        if cell.command and cell.command.c1 == 20:
+            tempo_change = cell.command.c2
+
+    return tempo_change
+
+
+BPM = int
+
+
+@dataclass(frozen=True)
+class TempoSlicedPattern:
+    """
+    A pattern divided into sub-patterns (slices) with different tempos. A slice may only
+    have a tempo change on its first row. The `BPM` value paired with each slice should
+    have the same value as the tempo change on the first row (if any).
+    """
+
+    slices: list[Tuple[Optional[BPM], mptm.Pattern]]
+
+
+def slice_pattern(pattern: mptm.Pattern) -> TempoSlicedPattern:
+    """
+    Split a pattern into a sliced pattern. Concatenating the slices gives back the
+    original pattern.
+    """
+    slices: list[Tuple[Optional[BPM], mptm.Pattern]] = []
+    tempo: Optional[BPM] = None
+    slice: mptm.Pattern = []
+
+    for row in pattern:
+        tempo_change = get_tempo_change(row)
+
+        if tempo_change is None:
+            slice.append(row)
+        else:
+            if slice:
+                slices.append((tempo, slice))
+            tempo = tempo_change
+            slice = [row]
+
+    slices.append((tempo, slice))
+
+    return TempoSlicedPattern(slices)
+
+
 def convert_track(track: mptm.Track) -> hydrogen.Song:
     track_pattern_names = track.mp_extensions.pattern_names or []
     extended_track_pattern_names = [
@@ -103,6 +158,7 @@ def convert_track(track: mptm.Track) -> hydrogen.Song:
 
     # List of unique names. Same length as `track.patterns`.
     unique_pattern_names = uniquify_names(extended_track_pattern_names)
+    named_patterns = zip(unique_pattern_names, track.patterns)
 
     def get_pattern_resolution(index: int) -> Fraction:
         if track.mptm_extensions is None:
@@ -122,20 +178,43 @@ def convert_track(track: mptm.Track) -> hydrogen.Song:
 
         return Fraction(rpb) if rpb is not None else default_resolution
 
-    def convert_pattern(
+    def convert_slice(
         name: str, resolution: Fraction, rows: mptm.Pattern
     ) -> hydrogen.Pattern:
         size = round(Fraction(len(rows)) / resolution * hydrogen_ticks_per_beat)
         notes = [n for i, r in enumerate(rows) for n in convertRow(resolution, i, r)]
         return hydrogen.Pattern(name=name, size=size, notes=notes)
 
-    patterns = [
-        convert_pattern(unique_pattern_names[i], get_pattern_resolution(i), p)
-        for i, p in enumerate(track.patterns)
+    def convert_pattern(
+        name: str, resolution: Fraction, rows: mptm.Pattern
+    ) -> list[Tuple[Optional[BPM], hydrogen.Pattern]]:
+        slices = slice_pattern(rows).slices
+        return [
+            (
+                bpm,
+                convert_slice(
+                    name if len(slices) == 1 else name + f"#{i}", resolution, slice
+                ),
+            )
+            for i, (bpm, slice) in enumerate(slices)
+        ]
+
+    converted_sliced_patterns: list[list[Tuple[Optional[int], hydrogen.Pattern]]] = [
+        convert_pattern(name, get_pattern_resolution(i), pat)
+        for i, (name, pat) in enumerate(named_patterns)
     ]
 
-    pattern_sequence = [unique_pattern_names[o] for o in track.header.orders]
-    bpm_timeline: list[hydrogen.BpmMarker] = []
+    bpms, patterns = unzip(
+        [slice for slices in converted_sliced_patterns for slice in slices]
+    )
+
+    pattern_sequence = [
+        pat.name for o in track.header.orders for _, pat in converted_sliced_patterns[o]
+    ]
+
+    bpm_timeline: list[hydrogen.BpmMarker] = [
+        hydrogen.BpmMarker(i, bpm) for i, bpm in enumerate(bpms) if bpm is not None
+    ]
 
     return hydrogen.Song(
         name=track.header.songname,

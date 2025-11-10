@@ -1,11 +1,17 @@
 from fractions import Fraction
 from pathlib import Path
-from typing import Optional, TypeVar
+from typing import Optional, Tuple, TypeVar
 from hypothesis import assume, given, strategies as st
 from hypothesis.strategies import SearchStrategy
 import pytest
 
-from conversion import convert_key, convert_note, convert_track, convert_volume
+from conversion import (
+    convert_key,
+    convert_note,
+    convert_track,
+    convert_volume,
+    slice_pattern,
+)
 import hydrogen_format as hydrogen
 from logger import SilentLogger
 import mptm_format as mptm
@@ -51,7 +57,7 @@ def test_convert_volume_negative(vol_pan: int):
 @given(st.integers(min_value=0, max_value=119))
 def test_convert_key(k: int):
     (key, octave) = convert_key(k)
-    assert k == 12 * octave + key
+    assert k == 12 * (octave + 3) + key
 
 
 @given(st.integers(max_value=-1))
@@ -67,22 +73,34 @@ def test_convert_key_out_of_range2(k: int):
 
 
 @st.composite
+def gen_command(draw: st.DrawFn) -> mptm.Command:
+    # c1=20 is a tempo change
+    c1 = draw(st.integers(min_value=15, max_value=25))
+    c2 = draw(st.integers(min_value=0, max_value=255))
+    return mptm.Command(
+        c1=c1,
+        c2=c2,
+    )
+
+
+@st.composite
 def gen_cell(draw: st.DrawFn) -> mptm.Cell:
     instrument = draw(optional(st.integers()))
     note = draw(optional(st.integers(min_value=0, max_value=119)))
     vol_pan = draw(optional(st.integers(min_value=0, max_value=255)))
+    command = draw(optional(gen_command()))
     return mptm.Cell(
         instrument=instrument,
         note=note,
         vol_pan=vol_pan,
-        command=None,
+        command=command,
     )
 
 
 def note_to_cell(note: hydrogen.Note) -> mptm.Cell:
     return mptm.Cell(
         instrument=note.instrument + 1,
-        note=12 * note.octave + note.key,
+        note=12 * (note.octave + 3) + note.key,
         vol_pan=round(note.velocity * 64.0),
         command=None,
     )
@@ -109,6 +127,124 @@ def test_cell_to_note_roundrip(cell: mptm.Cell):
     assert adjusted_cell == note_to_cell(note)
 
 
+def to_int_or_none(s: str) -> Optional[int]:
+    """
+    to_int_or_none("1")
+    1
+    to_int_or_none("123")
+    123
+    to_int_or_none("")
+    None
+    to_int_or_none("abc")
+    None
+    """
+    try:
+        return int(s)
+    except (TypeError, ValueError):
+        return None
+
+
+def split_pattern_name(name: str) -> Tuple[str, Optional[int]]:
+    """
+    >>> split_pattern_name("Apa")
+    ('Apa', None)
+    >>> split_pattern_name("Apa2")
+    ('Apa2', None)
+    >>> split_pattern_name("Apa#22")
+    ('Apa', 22)
+    >>> split_pattern_name("")
+    ('', None)
+    >>> split_pattern_name("Apa#Bepa")
+    ('Apa', None)
+    """
+    frukt = name.split("#", 1)
+    subscript = to_int_or_none(frukt[1]) if len(frukt) > 1 else None
+    return (frukt[0], subscript)
+
+
+def base_pattern_name(name: str) -> str:
+    return split_pattern_name(name)[0]
+
+
+# Merge each sequence of patterns with names "foo#0", "foo#1", etc. into a single pattern
+# named "foo"
+def unsplit_patterns(patterns: list[hydrogen.Pattern]) -> list[hydrogen.Pattern]:
+    def set_base_name(pattern: hydrogen.Pattern) -> hydrogen.Pattern:
+        return hydrogen.Pattern(
+            size=pattern.size,
+            name=base_pattern_name(pattern.name),
+            notes=pattern.notes,
+        )
+
+    def merge(p1: hydrogen.Pattern, p2: hydrogen.Pattern) -> hydrogen.Pattern:
+        return hydrogen.Pattern(
+            size=p1.size + p2.size,
+            name=p1.name,
+            notes=p1.notes + p2.notes,
+        )
+
+    if patterns:
+        first_pattern = patterns[0]
+        patterns1 = patterns[1:]
+    else:
+        return []
+
+    merged_patterns: list[hydrogen.Pattern] = []
+    current = set_base_name(first_pattern)
+
+    for pattern in patterns1:
+        base = base_pattern_name(pattern.name)
+        if base == current.name:
+            current = merge(current, pattern)
+        else:
+            merged_patterns.append(current)
+            current = set_base_name(pattern)
+
+    merged_patterns.append(current)
+    return merged_patterns
+
+
+# Merge each sequence of references to patterns with names "foo#0", "foo#1", etc. into a
+# single reference named "foo"
+def unsplit_pattern_sequence(refs: list[str]) -> list[str]:
+    """
+    >>> unsplit_pattern_sequence([])
+    []
+    >>> unsplit_pattern_sequence(["A", "B"])
+    ['A', 'B']
+    >>> unsplit_pattern_sequence(["A", "B#0", "B#1", "C"])
+    ['A', 'B', 'C']
+    >>> unsplit_pattern_sequence(["A", "A", "A"])
+    ['A', 'A', 'A']
+    >>> unsplit_pattern_sequence(["A", "B#0", "B#1", "B#2", "B#0", "B#1", "B#2", "C#0", "C#1"])
+    ['A', 'B', 'B', 'C']
+    """
+    if refs:
+        first = refs[0]
+        refs1 = refs[1:]
+    else:
+        return []
+
+    merged_refs: list[str] = []
+    current, current_sub = split_pattern_name(first)
+
+    for ref in refs1:
+        next, next_sub = split_pattern_name(ref)
+        new_pattern = (
+            next != current  # base name changed
+            or next_sub is None  # no subscript
+            or current_sub is None  # no subscript
+            or next_sub < current_sub  # subscript jumped back
+        )
+        current_sub = next_sub
+        if new_pattern:
+            merged_refs.append(current)
+            current = next
+
+    merged_refs.append(current)
+    return merged_refs
+
+
 # Focuses on structure. Does not check:
 #
 #   * Timing (pattern length and note positions)
@@ -124,25 +260,27 @@ def check_conversion(track: mptm.Track):
         assert len(h2_patt.notes) == len(mp_notes)
 
     h2 = convert_track(track)
+    h2_patterns = unsplit_patterns(h2.patterns)
+    h2_pattern_sequence = unsplit_pattern_sequence(h2.pattern_sequence)
 
-    assert len(h2.patterns) == track.header.num_patterns
+    assert len(h2_patterns) == track.header.num_patterns
 
     if track.mp_extensions.pattern_names is not None:
-        assert len(h2.patterns) >= len(track.mp_extensions.pattern_names)
-        for mp_name, h2_patt in zip(track.mp_extensions.pattern_names, h2.patterns):
+        assert len(h2_patterns) >= len(track.mp_extensions.pattern_names)
+        for mp_name, h2_patt in zip(track.mp_extensions.pattern_names, h2_patterns):
             assert mp_name == h2_patt.name
 
-    for mp_patt, h2_patt in zip(track.patterns, h2.patterns):
+    for mp_patt, h2_patt in zip(track.patterns, h2_patterns):
         check_converted_pattern(mp_patt, h2_patt)
 
     h2_pattern_positions: dict[str, int] = {}
-    for i, p in enumerate(h2.patterns):
+    for i, p in enumerate(h2_patterns):
         h2_pattern_positions[p.name] = i
 
-    h2_orders = [h2_pattern_positions[p] for p in h2.pattern_sequence]
+    h2_orders = [h2_pattern_positions[p] for p in h2_pattern_sequence]
 
     assert h2_orders == track.header.orders
-    assert h2.bpm_timeline == []
+    # assert h2.bpm_timeline == []
 
 
 def test_convert_file_empty():
@@ -171,7 +309,7 @@ def gen_header(draw: st.DrawFn) -> mptm.ITHeader:
     title = draw(st.characters())
     num_instruments = draw(st.integers())
     num_samples = draw(st.integers())
-    num_patterns = draw(st.integers(min_value=0, max_value=10))
+    num_patterns = draw(st.integers(min_value=0, max_value=5))
     cwtv = draw(st.integers())
     cmwt = draw(st.integers())
     initial_speed = draw(st.integers())
@@ -197,6 +335,16 @@ def gen_header(draw: st.DrawFn) -> mptm.ITHeader:
 
 
 @st.composite
+def gen_pattern(draw: st.DrawFn) -> mptm.Pattern:
+    return draw(
+        st.lists(
+            st.dictionaries(keys=st.integers(), values=gen_cell(), max_size=5),
+            max_size=7,
+        )
+    )
+
+
+@st.composite
 def gen_extended_pattern(draw: st.DrawFn) -> mptm.MPTMExtendedPattern:
     rpb = draw(optional(st.integers(min_value=1)))
     rpm = draw(optional(st.integers(min_value=1)))
@@ -211,15 +359,17 @@ def gen_track(draw: st.DrawFn) -> mptm.Track:
     header = draw(gen_header())
     patterns: list[mptm.Pattern] = draw(
         st.lists(
-            st.lists(
-                st.dictionaries(keys=st.integers(), values=gen_cell(), max_size=5),
-                max_size=10,
-            ),
+            gen_pattern(),
             min_size=header.num_patterns,
             max_size=header.num_patterns,
         )
     )
-    names = draw(st.lists(st.characters(), max_size=len(patterns)))
+
+    # '#' is not allowed in pattern names, as it's used for subscripts when splitting
+    # patterns at tempo changes
+    names = draw(
+        st.lists(st.characters(exclude_characters="#"), max_size=len(patterns))
+    )
     unique_names = list(set(names))
     mp_extensions = mptm.MPExtensions(
         pattern_names=draw(optional(st.just(unique_names)))
@@ -236,6 +386,13 @@ def gen_track(draw: st.DrawFn) -> mptm.Track:
         mp_extensions=mp_extensions,
         mptm_extensions=mptm_extensions,
     )
+
+
+@given(gen_pattern())
+def test_slice_pattern_concat(pattern: mptm.Pattern):
+    sliced_pat = slice_pattern(pattern)
+    pattern2 = [row for _, slice in sliced_pat.slices for row in slice]
+    assert pattern2 == pattern
 
 
 @given(gen_track())

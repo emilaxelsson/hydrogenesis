@@ -4,6 +4,22 @@ import hydrogen_format as hydrogen
 from utils import require
 
 
+note_keys = [
+    "C",
+    "Cs",
+    "D",
+    "Ef",
+    "E",
+    "F",
+    "Fs",
+    "G",
+    "Af",
+    "A",
+    "Bf",
+    "B",
+]
+
+
 def render_pattern(pattern: hydrogen.Pattern) -> Element:
     pattern_elem = Element("pattern")
 
@@ -26,6 +42,9 @@ def render_pattern(pattern: hydrogen.Pattern) -> Element:
         instrument = SubElement(note_elem, "instrument")
         instrument.text = str(note.instrument)
 
+        key = SubElement(note_elem, "key")
+        key.text = note_keys[note.key] + str(note.octave)
+
     return pattern_elem
 
 
@@ -47,7 +66,6 @@ def graft(template: Element, song: hydrogen.Song) -> Element:
         pattern_list.append(render_pattern(p))
 
     pattern_sequence = require(template.find("patternSequence"), "patternSequence tag")
-    pattern_sequence.clear()
 
     # Remove existing patterns from template
     pattern_sequence.clear()
@@ -56,5 +74,23 @@ def graft(template: Element, song: hydrogen.Song) -> Element:
         pattern_id = SubElement(group, "patternID")
         pattern_id.text = pattern
         pattern_sequence.append(group)
+
+    bpm_timeline = require(template.find("BPMTimeLine"), "BPMTimeLine tag")
+
+    if song.bpm_timeline:
+        pattern_list = require(
+            template.find("isTimelineActivated"), "isTimelineActivated tag"
+        )
+        pattern_list.text = "true"
+
+        # Remove existing markers from template
+        bpm_timeline.clear()
+        for bpm_marker in song.bpm_timeline:
+            new_bpm = Element("newBPM")
+            bpm_bar = SubElement(new_bpm, "BAR")
+            bpm_bar.text = str(bpm_marker.bar)
+            bpm_bpm = SubElement(new_bpm, "BPM")
+            bpm_bpm.text = str(bpm_marker.bpm)
+            bpm_timeline.append(new_bpm)
 
     return template
