@@ -16,7 +16,7 @@ What does not get converted?
 
   * Samples and instruments
   * Mixer settings
-  * Note commands and panning
+  * Most note commands and panning
   * Etc.
 
 
@@ -26,7 +26,7 @@ Note commands
 
 Hydrogenesis currently supports one note command: *tempo change*.
 
-Tempo changes can occur anywhere in a pattern. On the other hand, Hydrogen in fact only allows tempo changes at the beginning of patterns. The converter solves this limitation by splitting patterns upon tempo changes. For example, if pattern "A" contains one tempo change, it will get converted into two Hydrogen patterns: "A#0" and "A#1".
+Tempo changes can occur anywhere in a pattern. On the other hand, Hydrogen in fact only allows tempo changes at the beginning of patterns. The converter solves this limitation by splitting patterns upon tempo changes. For example, if pattern "A" contains one tempo change somewhere after the first row, it will get converted into two Hydrogen patterns: "A#0" and "A#1".
 
 
 
