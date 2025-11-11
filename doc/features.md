@@ -26,7 +26,7 @@ Note commands
 
 Hydrogenesis currently supports one note command: *tempo change*.
 
-Tempo changes can occur anywhere in a pattern. On the other hand, Hydrogen in fact only allows tempo changes at the beginning of patterns. The converter solves this limitation by splitting patterns upon tempo changes. For example, if pattern "A" contains one tempo change somewhere after the first row, it will get converted into two Hydrogen patterns: "A#0" and "A#1".
+Tempo changes can occur anywhere in a pattern. This may seem surprising given that Hydrogen only allows tempo changes at the beginning of patterns. The converter solves this limitation by splitting patterns upon tempo changes. For example, say pattern "A" contains one tempo change somewhere after the first row. Then it will get converted into two Hydrogen patterns: "A#0" and "A#1".
 
   * Note: Relative tempo changes are supported, but do not work properly when looping patterns. The accumulative change caused by looping a pattern cannot be replicated in Hydrogen.
 
@@ -37,9 +37,9 @@ The example track [Dyers_eve.mptm](../examples/Dyers_eve.mptm) demonstrates the 
 Rows per beat
 ------------------------------------------------------------------------------------------
 
-The MPTM format has an extension that allows overriding the default number of *rows per beat* (RPB) for individual patterns. This is a really nice feature that provides a kind of dynamic resolution. Patterns with a lot of action can use e.g. 4 rows per beat (meaning each row is separated by a 16th note) while other patterns can make do with a lower RPB. Using a lower number where possible makes navigation and editing easier.
+The MPTM format has an extension that allows overriding the default number of *rows per beat* (RPB) for individual patterns, providing a kind of dynamic resolution. Patterns with a lot of action can use e.g. 4 rows per beat (meaning each row is separated by a 16th note) while other patterns can make do with a lower RPB. Using a lower number where possible makes navigation and editing easier.
 
-Hydrogenesis will always respect RPB for MPTM tracks. However, OpenMPT itself only caters for RPB when the track's tempo mode is set to "Modern (accurate)". Hence, modern tempo mode must be used in order to get consistent playback and conversion when patterns override the default RPB.
+Hydrogenesis always respects RPB for MPTM tracks. However, OpenMPT itself only caters for RPB when the track's tempo mode is set to "Modern (accurate)". Hence, modern tempo mode must be used in order to get consistent playback and conversion when patterns override the default RPB.
 
 The [Tempo mode](./setup_track.md#tempo-mode) section explains how to set modern tempo mode.
 
