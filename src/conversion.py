@@ -1,9 +1,10 @@
 from dataclasses import dataclass
+from enum import Enum
 from fractions import Fraction
 from typing import Optional, Tuple
 import hydrogen_format as hydrogen
 import mptm_format as mptm
-from utils import uniquify_names, unzip
+from utils import uniquify_names
 
 
 default_resolution = Fraction(4)
@@ -106,7 +107,16 @@ def get_tempo_change(row: mptm.Row) -> Optional[int]:
     return tempo_change
 
 
-BPM = int
+class BPMOp(Enum):
+    SetBPM = 0
+    DecreaseBPM = 1
+    IncreaseBPM = 2
+
+
+@dataclass(frozen=True)
+class TempoChange:
+    operation: BPMOp
+    value: int
 
 
 @dataclass(frozen=True)
@@ -117,7 +127,19 @@ class TempoSlicedPattern:
     have the same value as the tempo change on the first row (if any).
     """
 
-    slices: list[Tuple[Optional[BPM], mptm.Pattern]]
+    slices: list[Tuple[Optional[TempoChange], mptm.Pattern]]
+
+
+def interpret_tempo_command(command: int) -> TempoChange:
+    if command < 0 or command > 255:
+        raise ValueError(f"invalid tempo command {command}")
+
+    if command <= 15:
+        return TempoChange(operation=BPMOp.DecreaseBPM, value=command * 5)
+    elif command <= 31:
+        return TempoChange(operation=BPMOp.IncreaseBPM, value=(command - 16) * 5)
+    else:
+        return TempoChange(operation=BPMOp.SetBPM, value=command)
 
 
 def slice_pattern(pattern: mptm.Pattern) -> TempoSlicedPattern:
@@ -125,8 +147,8 @@ def slice_pattern(pattern: mptm.Pattern) -> TempoSlicedPattern:
     Split a pattern into a sliced pattern. Concatenating the slices gives back the
     original pattern.
     """
-    slices: list[Tuple[Optional[BPM], mptm.Pattern]] = []
-    tempo: Optional[BPM] = None
+    slices: list[Tuple[Optional[TempoChange], mptm.Pattern]] = []
+    tempo: Optional[TempoChange] = None
     slice: mptm.Pattern = []
 
     for row in pattern:
@@ -137,12 +159,40 @@ def slice_pattern(pattern: mptm.Pattern) -> TempoSlicedPattern:
         else:
             if slice:
                 slices.append((tempo, slice))
-            tempo = tempo_change
+            tempo = interpret_tempo_command(tempo_change)
             slice = [row]
 
     slices.append((tempo, slice))
 
     return TempoSlicedPattern(slices)
+
+
+def make_bpm_timeline(
+    initial_tempo: int,
+    tempo_changes_by_pattern: dict[str, Optional[TempoChange]],
+    pattern_sequence: list[str],
+) -> list[hydrogen.BpmMarker]:
+    bpm_timeline: list[hydrogen.BpmMarker] = []
+    current_bpm = initial_tempo
+
+    for i, pattern_name in enumerate(pattern_sequence):
+        tempo_change = tempo_changes_by_pattern[pattern_name]
+
+        if tempo_change is None:
+            continue
+
+        bpm = current_bpm  # To make Pyright happy
+        if tempo_change.operation == BPMOp.DecreaseBPM:
+            bpm = current_bpm - tempo_change.value
+        elif tempo_change.operation == BPMOp.IncreaseBPM:
+            bpm = current_bpm + tempo_change.value
+        elif tempo_change.operation == BPMOp.SetBPM:
+            bpm = tempo_change.value
+
+        bpm_timeline.append(hydrogen.BpmMarker(i, bpm))
+        current_bpm = bpm
+
+    return bpm_timeline
 
 
 def convert_track(track: mptm.Track) -> hydrogen.Song:
@@ -187,7 +237,7 @@ def convert_track(track: mptm.Track) -> hydrogen.Song:
 
     def convert_pattern(
         name: str, resolution: Fraction, rows: mptm.Pattern
-    ) -> list[Tuple[Optional[BPM], hydrogen.Pattern]]:
+    ) -> list[Tuple[Optional[TempoChange], hydrogen.Pattern]]:
         slices = slice_pattern(rows).slices
         return [
             (
@@ -199,22 +249,30 @@ def convert_track(track: mptm.Track) -> hydrogen.Song:
             for i, (bpm, slice) in enumerate(slices)
         ]
 
-    converted_sliced_patterns: list[list[Tuple[Optional[int], hydrogen.Pattern]]] = [
+    converted_sliced_patterns: list[
+        list[Tuple[Optional[TempoChange], hydrogen.Pattern]]
+    ] = [
         convert_pattern(name, get_pattern_resolution(i), pat)
         for i, (name, pat) in enumerate(named_patterns)
     ]
 
-    bpms, patterns = unzip(
-        [slice for slices in converted_sliced_patterns for slice in slices]
-    )
+    patterns = [
+        pattern for slices in converted_sliced_patterns for _, pattern in slices
+    ]
+
+    tempo_changes_by_pattern: dict[str, Optional[TempoChange]] = {
+        pattern.name: tempo_change
+        for slices in converted_sliced_patterns
+        for tempo_change, pattern in slices
+    }
 
     pattern_sequence = [
         pat.name for o in track.header.orders for _, pat in converted_sliced_patterns[o]
     ]
 
-    bpm_timeline: list[hydrogen.BpmMarker] = [
-        hydrogen.BpmMarker(i, bpm) for i, bpm in enumerate(bpms) if bpm is not None
-    ]
+    bpm_timeline = make_bpm_timeline(
+        track.header.initial_tempo, tempo_changes_by_pattern, pattern_sequence
+    )
 
     return hydrogen.Song(
         name=track.header.songname,
