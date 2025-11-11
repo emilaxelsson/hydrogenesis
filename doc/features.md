@@ -28,6 +28,8 @@ Hydrogenesis currently supports one note command: *tempo change*.
 
 Tempo changes can occur anywhere in a pattern. On the other hand, Hydrogen in fact only allows tempo changes at the beginning of patterns. The converter solves this limitation by splitting patterns upon tempo changes. For example, if pattern "A" contains one tempo change somewhere after the first row, it will get converted into two Hydrogen patterns: "A#0" and "A#1".
 
+The example track [Dyers_eve.mptm](../examples/Dyers_eve.mptm) demonstrates the use of tempo changes.
+
 
 
 Rows per beat
