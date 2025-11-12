@@ -10,6 +10,10 @@ from utils import uniquify_names
 default_resolution = Fraction(4)
 hydrogen_ticks_per_beat = Fraction(48)
 
+# S commands (vibrato, delay, etc.)
+s_command = 19
+change_tempo_command = 20
+
 
 def convert_volume(vol_pan: Optional[int]) -> float:
     """
@@ -67,13 +71,19 @@ def convert_key(note: int) -> Tuple[int, int]:
 
 
 def convert_note(beat: Fraction, cell: mptm.Cell) -> Optional[hydrogen.Note]:
+    delay_ticks = 0
+
+    if cell.command and cell.command.c1 == s_command:
+        if cell.command.c2 & 0xF0 == 0xD0:
+            delay_ticks = cell.command.c2 & 0xF
+
     if cell.instrument is None:
         return None
 
     if cell.note is None:
         return None
 
-    position = round(beat * hydrogen_ticks_per_beat)
+    position = round(beat * hydrogen_ticks_per_beat + delay_ticks)
     velocity = convert_volume(cell.vol_pan)
     (key, octave) = convert_key(cell.note)
 
@@ -101,7 +111,7 @@ def get_tempo_change(row: mptm.Row) -> Optional[int]:
 
     # The last (i.e. right-most) tempo change wins in case of conflicting commands
     for cell in cells_left_to_right:
-        if cell.command and cell.command.c1 == 20:
+        if cell.command and cell.command.c1 == change_tempo_command:
             tempo_change = cell.command.c2
 
     return tempo_change
