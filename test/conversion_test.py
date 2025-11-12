@@ -6,10 +6,13 @@ from hypothesis.strategies import SearchStrategy
 import pytest
 
 from conversion import (
+    BPMOp,
+    TempoChange,
     convert_key,
     convert_note,
     convert_track,
     convert_volume,
+    interpret_tempo_command,
     slice_pattern,
 )
 import hydrogen_format as hydrogen
@@ -386,6 +389,21 @@ def gen_track(draw: st.DrawFn) -> mptm.Track:
         mp_extensions=mp_extensions,
         mptm_extensions=mptm_extensions,
     )
+
+
+@given(st.integers(min_value=0, max_value=255))
+def test_interpret_tempo_command(command: int):
+    def uninterpret_tempo_command(change: TempoChange) -> int:
+        if change.operation == BPMOp.DecreaseBPM:
+            return change.value // 5
+        elif change.operation == BPMOp.IncreaseBPM:
+            return change.value // 5 + 16
+        else:
+            return change.value
+
+    change = interpret_tempo_command(command)
+    command2 = uninterpret_tempo_command(change)
+    assert command2 == command
 
 
 @given(gen_pattern())
