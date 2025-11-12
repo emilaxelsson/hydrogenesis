@@ -23,6 +23,8 @@ Rendering:
   * Once done with editing, use [Hydrogenesis](./src/hydrogenesis.py) to [convert](./doc/conversion.md) the track to a Hydrogen song
   * Use Hydrogen to generate a sound file
 
+(Or, maybe [screenshots](./doc/screenshots.md) is a better way of conveying the idea...)
+
 
 
 But why?
@@ -48,6 +50,7 @@ Getting started:
 
 Topics:
 
+  * [Screenshots](./doc/screenshots.md)
   * [Features and limitations](./doc/features.md)
   * [Set up track from scratch](./doc/setup_track.md)
   * [Parser](./doc/parser.md)
