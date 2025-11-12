@@ -83,6 +83,8 @@ def convert_note(beat: Fraction, cell: mptm.Cell) -> Optional[hydrogen.Note]:
     if cell.note is None:
         return None
 
+    # An option would be to put the delay in the `leadlag` property. That would seem
+    # semantically cleaner, but I don't think it would make any difference in practice.
     position = round(beat * hydrogen_ticks_per_beat + delay_ticks)
     velocity = convert_volume(cell.vol_pan)
     (key, octave) = convert_key(cell.note)
