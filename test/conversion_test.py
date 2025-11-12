@@ -1,9 +1,9 @@
 from fractions import Fraction
-from pathlib import Path
-from typing import Optional, Tuple, TypeVar
 from hypothesis import assume, given, strategies as st
 from hypothesis.strategies import SearchStrategy
+from pathlib import Path
 import pytest
+from typing import Optional, Tuple, TypeVar
 
 from conversion import (
     BPMOp,
