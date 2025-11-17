@@ -32,7 +32,7 @@ But why?
 
 *Q:* Why not stick to Hydrogen alone?
 
-*A:* Because Hydrogen is not ideal for manual editing of entire songs. It takes a lot of clicking in the UI to add beats and make changes.
+*A:* Because OpenMPT provides a text-based song representation and keyboard-centric editing which some of us prefer.
 
 *Q:* Why not stick to OpenMPT alone?
 
