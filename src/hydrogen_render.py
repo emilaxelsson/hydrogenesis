@@ -35,7 +35,33 @@ note_keys = [
 ]
 
 
-def render_pattern(pattern: hydrogen.Pattern) -> Element:
+def get_instrument_ids(template: Element) -> list[int]:
+    """
+    Our Hydrogen format (hydrogen_format.py) refers to instrument by index rather than id.
+    However, in the real Hydrogen format, notes refer to instrument by id, not index.
+
+    The template contains a list of instruments, and each instrument has an id. Due to
+    removal and re-ordering of instruments, the ids may be out of order and even contain
+    gaps.
+
+    The purpose of this function is to return the id of each instrument, so that we
+    can translate from index to id.
+    """
+    instrument_ids: list[int] = []
+
+    for instrument in template.findall(".//instrumentList/instrument"):
+        id_elem = instrument.find("id")
+        if id_elem is None or id_elem.text is None:
+            continue
+        try:
+            instrument_ids.append(int(id_elem.text.strip()))
+        except ValueError:
+            continue
+
+    return instrument_ids
+
+
+def render_pattern(instrument_ids: list[int], pattern: hydrogen.Pattern) -> Element:
     pattern_elem = Element("pattern")
 
     name = SubElement(pattern_elem, "name")
@@ -54,8 +80,13 @@ def render_pattern(pattern: hydrogen.Pattern) -> Element:
         velocity = SubElement(note_elem, "velocity")
         velocity.text = str(note.velocity)
 
+        try:
+            instrument_id = instrument_ids[note.instrument_index - 1]
+        except ValueError:
+            raise ValueError(f"no instrument with index {note.instrument_index} in template")
+
         instrument = SubElement(note_elem, "instrument")
-        instrument.text = str(note.instrument_index)
+        instrument.text = str(instrument_id)
 
         key = SubElement(note_elem, "key")
         key.text = note_keys[note.key] + str(note.octave)
@@ -73,12 +104,15 @@ def graft(template: Element, song: hydrogen.Song) -> Element:
     bpm_element = require(template.find("bpm"), "bpm tag")
     bpm_element.text = str(song.bpm)
 
+    instrument_ids = get_instrument_ids(template)
+    print(instrument_ids)
+
     pattern_list = require(template.find("patternList"), "patternList tag")
 
     # Remove existing patterns from template
     pattern_list.clear()
     for p in song.patterns:
-        pattern_list.append(render_pattern(p))
+        pattern_list.append(render_pattern(instrument_ids, p))
 
     pattern_sequence = require(template.find("patternSequence"), "patternSequence tag")
 
