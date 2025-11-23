@@ -55,7 +55,7 @@ def render_pattern(pattern: hydrogen.Pattern) -> Element:
         velocity.text = str(note.velocity)
 
         instrument = SubElement(note_elem, "instrument")
-        instrument.text = str(note.instrument)
+        instrument.text = str(note.instrument_index)
 
         key = SubElement(note_elem, "key")
         key.text = note_keys[note.key] + str(note.octave)

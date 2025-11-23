@@ -102,7 +102,7 @@ def gen_cell(draw: st.DrawFn) -> mptm.Cell:
 
 def note_to_cell(note: hydrogen.Note) -> mptm.Cell:
     return mptm.Cell(
-        instrument=note.instrument + 1,
+        instrument=note.instrument_index,
         note=12 * (note.octave + 3) + note.key,
         vol_pan=round(note.velocity * 64.0),
         command=None,

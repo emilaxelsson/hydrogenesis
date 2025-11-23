@@ -25,7 +25,16 @@ class Note:
     # 5 ticks. `leadlag` is a floating point value. Not sure how it's quantized, but at
     # least the UI shows two decimal places.
 
-    instrument: int  # 0-based index
+    # 1-based index referring to instrument list position (not instrument id). The reasons
+    # for going for index rather than id are:
+    #
+    # * The id is not visible to the user except by viewing the XML. The instrument order
+    #   OTOH is editable by dragging with the mouse.
+    # * Hydrogen interprets the program number of incoming MIDI notes as referring to the
+    #   instrument index. Hence, the converter needs to use index as well for a consistent
+    #   experience.
+    instrument_index: int
+
     velocity: float  # Range: [0.0, 1.0]
     key: int  # Range: [0, 11], corresponding to C, C#, D ... B
     octave: int  # 0 is the "normal octave". Negative values are allowed.
