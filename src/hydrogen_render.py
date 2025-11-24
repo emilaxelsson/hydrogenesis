@@ -105,7 +105,6 @@ def graft(template: Element, song: hydrogen.Song) -> Element:
     bpm_element.text = str(song.bpm)
 
     instrument_ids = get_instrument_ids(template)
-    print(instrument_ids)
 
     pattern_list = require(template.find("patternList"), "patternList tag")
 
