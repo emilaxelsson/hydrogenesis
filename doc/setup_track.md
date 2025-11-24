@@ -88,6 +88,6 @@ In the Song Properties dialog:
 #### Footnotes
 
 <a name="fn1">1</a>:
-Instruments in Hydrogen are shown in the GUI as an ordered list which can be rearranged using the mouse. The *instrument index* refers to the position in the list (starting from 1).
+Instruments in Hydrogen are shown in the GUI as an ordered list which can be rearranged using the mouse. The *instrument index* refers to its position in that list (starting from 1).
 The MIDI program number gets interpreted by Hydrogen as the instrument index. Hence, the program number should be the same as the instrument number in OpenMPT.
 Note that the instrument index is not necessarily the same as the *instrument id*. The index is simply the instrument's position in the list. The id is an internal property in Hydrogen which can be seen when viewing an `.h2song` file in an XML editor. The ids can become unordered and fragmented due to re-ordering and removal of instruments. Hydrogenesis users need not be concerned with instrument ids.
