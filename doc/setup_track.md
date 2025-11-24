@@ -15,14 +15,14 @@ Start by opening up Hydrogen's MIDI settings and check that a suitable input por
 
 Next, create a new song and load a drum kit. Adjust mixer settings as needed.
 
-In principle, nothing else is needed on the Hydrogen side. However, it is advised to save the song after setting up the drumkit. The resulting `.h2song` file can be used as a template by the [Hydrogenesis](../src/hydrogenesis.py) converter.
+In principle, nothing else is needed on the Hydrogen side. However, it is advised to save the song after setting up the drum kit. The resulting `.h2song` file can be used as a template by the [Hydrogenesis](../src/hydrogenesis.py) converter.
 
 
 
 OpenMPT
 ------------------------------------------------------------------------------------------
 
-We will now set up an OpenMPT track from scratch in such a way that it can be used to drive Hydrogen for playback as well as being [converted](./conversion.md) to a Hydrogen song using [Hydrogenesis](../src/hydrogenesis.py).
+We will now set up an OpenMPT track from scratch in such a way that it can be used to drive Hydrogen for playback as well as be [converted](./conversion.md) to a Hydrogen song using [Hydrogenesis](../src/hydrogenesis.py).
 
 Start by creating a new track in OpenMPT. The default format, IT (Impulse Tracker), works fine. The [MPTM extensions](#mptm-extensions) section explains additional features offered by the MPTM format. However, the instrument set up is the same regardless of format.
 
@@ -54,11 +54,9 @@ To create the first instrument:
 
         ![](./images/mpt_fx1_midi_output.png)
 
-      - Set "MIDI Program" to the same index as the instrument
+      - Set "MIDI Program" to the same number as the instrument<sup>[1](#fn1)</sup>
 
         ![](./images/mpt_instr_midi.png) ![](./images/mpt_instr_number.png)
-
-        The MIDI program index maps to the instrument index in the Hydrogen drumkit. It is possible to set MIDI program to a different index than the instrument number, and this could be useful if instruments are ordered differently in OpenMPT/Hydrogen. However, the [Hydrogenesis](../src/hydrogenesis.py) converter assumes that each instrument has the same index in both programs, so we advise sticking to that.
 
       - Set "Volume Command Handling" to "MIDI volume", and make sure that "Volume commands with note are Velocities" is checked
 
@@ -82,3 +80,14 @@ In the Song Properties dialog:
   * Set Tempo Mode to "Modern (accurate)"
 
 ![](./images/mpt_song_properties.png)
+
+
+
+<br/>
+
+#### Footnotes
+
+<a name="fn1">1</a>:
+Instruments in Hydrogen are shown in the GUI as an ordered list which can be rearranged using the mouse. The *instrument index* refers to the position in the list (starting from 1).
+The MIDI program number gets interpreted by Hydrogen as the instrument index. Hence, the program number should be the same as the instrument number in OpenMPT.
+Note that the instrument index is not necessarily the same as the *instrument id*. The index is simply the instrument's position in the list. The id is an internal property in Hydrogen which can be seen when viewing an `.h2song` file in an XML editor. The ids can become unordered and fragmented due to re-ordering and removal of instruments. Hydrogenesis users need not be concerned with instrument ids.
