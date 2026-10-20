@@ -2160,8 +2160,14 @@
    </instrumentComponent>
   </instrument>
  </instrumentList>
- <patternList>
- </patternList>
+  <patternList>
+    <pattern>
+      <name>Pattern 1</name>
+      <size>192</size>
+      <noteList>
+      </noteList>
+    </pattern>
+  </patternList>
  <virtualPatternList/>
  <patternSequence>
  </patternSequence>
