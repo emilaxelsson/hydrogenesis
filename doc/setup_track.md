@@ -9,9 +9,13 @@ Hydrogen
 
 Hydrogen will be used for playing notes sent from OpenMPT as MIDI events.
 
-Start by opening up Hydrogen's MIDI settings and check that a suitable input port is selected. The following settings have been tested to work well on Ubuntu 24.04 (Hydrogen 1.2.4).
+Start by opening up Hydrogen's MIDI settings and check that a suitable input port is selected. The following settings have been tested to work well on Ubuntu 24.04 (Hydrogen 1.2.4 and 1.2.6).
 
 ![](./images/h2_midi_settings.png)
+
+You also need to ensure that the Input Mode is set to "Instrument". This setting is found in the Options menu.
+
+![](./images/h2_input_mode.png)
 
 Next, create a new song and load a drum kit. Adjust mixer settings as needed.
 
