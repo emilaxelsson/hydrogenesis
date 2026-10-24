@@ -9,7 +9,7 @@ Hydrogen
 
 Hydrogen will be used for playing notes sent from OpenMPT as MIDI events.
 
-Start by opening up Hydrogen's MIDI settings and check that a suitable input port is selected. The following settings have been tested to work well on Ubuntu 24.04 (Hydrogen 1.2.4 and 1.2.6).
+Start by opening up Hydrogen's MIDI settings and check that a suitable input port is selected. The following settings have been tested to work well on Hydrogen 1.2.4 and 1.2.6 (Ubuntu 24.04).
 
 ![](./images/h2_midi_settings.png)
 
